@@ -1,5 +1,7 @@
 github.com/KarpelesLab/cryptutil v0.2.2 h1:s1S8CmsR2ZpHKfHtobU07itlEJfYMip2Ny/WwOjd2q0=
 github.com/KarpelesLab/cryptutil v0.2.2/go.mod h1:Gn5CJg+XtkDcfuQOCSBoDe5odb22ikPaCbW8em3Y5B0=
+github.com/KarpelesLab/cryptutil v0.2.3 h1:4/TujHX/bAQjZM9+qfYM/v5gpx8Sz56MWuOgWy70r9A=
+github.com/KarpelesLab/cryptutil v0.2.3/go.mod h1:Gn5CJg+XtkDcfuQOCSBoDe5odb22ikPaCbW8em3Y5B0=
 github.com/KarpelesLab/pjson v0.1.9 h1:JVmm61sLRVb+5YkUDacgM1FlB9CTOsCUhEvF+OzUMf0=
 github.com/KarpelesLab/pjson v0.1.9/go.mod h1:gb4uSTld7I2kO2WvLdat1mN1brsS1hzSR+dWw1hL3iU=
 github.com/KarpelesLab/rest v0.5.20 h1:foQXapCgJ3mYSkxCO6ljZDRMolo8ptiJW7TbJmb9QjE=
