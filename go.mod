@@ -6,6 +6,7 @@ require (
 	github.com/KarpelesLab/cryptutil v0.2.3
 	github.com/KarpelesLab/rest v0.5.20
 	github.com/fxamacker/cbor/v2 v2.7.0
+	github.com/google/uuid v1.6.0
 )
 
 require (
