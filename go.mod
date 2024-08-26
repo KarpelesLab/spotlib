@@ -3,7 +3,7 @@ module github.com/KarpelesLab/spotlib
 go 1.22.2
 
 require (
-	github.com/KarpelesLab/cryptutil v0.2.10
+	github.com/KarpelesLab/cryptutil v0.2.14
 	github.com/KarpelesLab/rest v0.5.20
 	github.com/fxamacker/cbor/v2 v2.7.0
 	github.com/google/uuid v1.6.0
