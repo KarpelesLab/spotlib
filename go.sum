@@ -8,10 +8,16 @@ github.com/KarpelesLab/cryptutil v0.2.13 h1:HOuH2P5W/i4SVDBWDxuUmcQZ7nnV8gIzYoBu
 github.com/KarpelesLab/cryptutil v0.2.13/go.mod h1:2gBM1JlpscOqYSE08hoOug3pFpR2Hh6EV/6aK7ZANqQ=
 github.com/KarpelesLab/cryptutil v0.2.14 h1:T5KdmH9w+Nolja2b9JwLUjnzuKLhtkrBzQlp2ATQUfM=
 github.com/KarpelesLab/cryptutil v0.2.14/go.mod h1:2gBM1JlpscOqYSE08hoOug3pFpR2Hh6EV/6aK7ZANqQ=
+github.com/KarpelesLab/cryptutil v0.2.15 h1:Rd97j5ktX0t7p7xvEEVeg+TeeC8luSpQV2QWUhanLB8=
+github.com/KarpelesLab/cryptutil v0.2.15/go.mod h1:2gBM1JlpscOqYSE08hoOug3pFpR2Hh6EV/6aK7ZANqQ=
 github.com/KarpelesLab/pjson v0.1.9 h1:JVmm61sLRVb+5YkUDacgM1FlB9CTOsCUhEvF+OzUMf0=
 github.com/KarpelesLab/pjson v0.1.9/go.mod h1:gb4uSTld7I2kO2WvLdat1mN1brsS1hzSR+dWw1hL3iU=
 github.com/KarpelesLab/rest v0.5.20 h1:foQXapCgJ3mYSkxCO6ljZDRMolo8ptiJW7TbJmb9QjE=
 github.com/KarpelesLab/rest v0.5.20/go.mod h1:Ks/tWkKBEh4N2e+ZoMROiI3sB5b1MnuA1Mj1yRvu1vg=
+github.com/KarpelesLab/spotproto v0.1.2 h1:SaxZFv7dSwVI3R/JnF3Dxuqsb6dFGGTxZooF83PyzG0=
+github.com/KarpelesLab/spotproto v0.1.2/go.mod h1:P7gXrqspqnXfTppaqEbYu5xQ5WrYuGGjdAEniD+Rrys=
+github.com/KarpelesLab/spotproto v0.1.3 h1:PdCQrUR6aMXX66aqi5fkOVxgPpX+454tjD1Dg0I0uts=
+github.com/KarpelesLab/spotproto v0.1.3/go.mod h1:P7gXrqspqnXfTppaqEbYu5xQ5WrYuGGjdAEniD+Rrys=
 github.com/KarpelesLab/typutil v0.2.13 h1:9m9drR8aIe2MaNh9hAuM39Zecgx6uvtlVurUOlE+1vk=
 github.com/KarpelesLab/typutil v0.2.13/go.mod h1:lqs248XpjFstgZMT5ZVP4/3B6zT7eEeq5kKj4/tC1IQ=
 github.com/KarpelesLab/typutil v0.2.16 h1:uVA+2/NfmQ6nzNsy8Eh4q3AuyWGWnqHKyQ4llbTwt+o=
@@ -20,6 +26,8 @@ github.com/KarpelesLab/webutil v0.2.1 h1:5mB+mPBj3iRasv9zY9rDAh00yvKQWJxDOjyUZTj
 github.com/KarpelesLab/webutil v0.2.1/go.mod h1:AKTsmoimqwSdJHtZzBnvxcjQv3lgyw/GVJFVyXaDilU=
 github.com/ModChain/edwards25519 v1.0.0 h1:Geww/chivFY6E/mZgA4chVf4HWvUgJ1LdRZ0v2d25Eo=
 github.com/ModChain/edwards25519 v1.0.0/go.mod h1:kjiZ1iVWnsHVMHeIgWFu26ik6/jPlE+c9MrfO5wbLm4=
+github.com/coder/websocket v1.8.12 h1:5bUXkEPPIbewrnkU8LTCLVaxi4N4J8ahufH2vlo4NAo=
+github.com/coder/websocket v1.8.12/go.mod h1:LNVeNrXQZfe5qhS9ALED3uA+l5pPqvwXg3CKoDBB2gs=
 github.com/fxamacker/cbor/v2 v2.7.0 h1:iM5WgngdRBanHcxugY4JySA0nk1wZorNOpTgCMedv5E=
 github.com/fxamacker/cbor/v2 v2.7.0/go.mod h1:pxXPTn3joSm21Gbwsv0w9OSA2y1HFR9qXEeXQVeNoDQ=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
