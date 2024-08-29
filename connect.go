@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
+	"strings"
 	"time"
 
 	"github.com/KarpelesLab/rest"
@@ -74,6 +76,9 @@ func (c *Client) runConnect() error {
 			}
 			c.regConn(co)
 			go co.run()
+
+			// FOR NOW only 1 connection, will do more soon
+			return nil
 		}
 	}
 
@@ -109,7 +114,10 @@ func (co *conn) handle(c *websocket.Conn) error {
 		return err
 	}
 
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go co.handleWrites(ctx, c)
 
 	for {
 		mt, dat, err := c.Read(ctx)
@@ -125,6 +133,20 @@ func (co *conn) handle(c *websocket.Conn) error {
 			}
 		case websocket.MessageText:
 			// TODO handle text messages. For now we do nothing of these
+		}
+	}
+}
+
+func (co *conn) handleWrites(ctx context.Context, wsc *websocket.Conn) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case msg := <-co.c.mWrQ:
+			// write message
+			buf := msg.Bytes()
+			buf = append([]byte{spotproto.InstantMsg}, buf...)
+			wsc.Write(ctx, websocket.MessageBinary, buf)
 		}
 	}
 }
@@ -148,7 +170,7 @@ func (co *conn) handshake(c *websocket.Conn) error {
 			switch obj := pkt.(type) {
 			case *spotproto.HandshakeRequest:
 				if obj.Ready {
-					co.c.logf("authentication done")
+					co.c.logf("authentication done, connected as c:%s", obj.ClientId)
 					return nil
 				}
 				if obj.Groups != nil {
@@ -193,6 +215,21 @@ func (co *conn) handlePacket(dat []byte) error {
 	}
 
 	switch obj := pkt.(type) {
+	case *spotproto.Message:
+		// Recipient:c:4p84:conn-ubzvcl-h7yv-g7pe-tfp6-mddcsqtu/699ec197-d329-45bd-9306-b29f2ff99ac9
+		rcv := obj.Recipient
+		pos := strings.IndexByte(rcv, '/')
+		if pos == -1 {
+			return nil
+		}
+		rcv = rcv[pos+1:]
+		q := co.c.takeInQ(rcv)
+		if q != nil {
+			q <- obj
+		} else {
+			co.c.logf("unable to route packet targetted to %s", obj.Recipient)
+		}
+		return nil
 	default:
 		co.c.logf("unsupported packet type %T", obj)
 		return nil

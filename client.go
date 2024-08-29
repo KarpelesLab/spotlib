@@ -92,6 +92,7 @@ func (c *Client) Query(target string, body []byte) ([]byte, error) {
 
 	msg := &spotproto.Message{
 		MessageID: id,
+		Sender:    "/" + id.String(),
 		Recipient: target,
 		Body:      body,
 	}
