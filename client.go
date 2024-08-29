@@ -98,7 +98,7 @@ func (c *Client) Query(target string, body []byte) ([]byte, error) {
 
 	c.mWrQ <- msg
 
-	t := time.NewTimer(2 * time.Second) // timeout for response
+	t := time.NewTimer(5 * time.Second) // timeout for response
 
 	select {
 	case <-t.C:
