@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/KarpelesLab/rest"
@@ -75,9 +76,6 @@ func (c *Client) runConnect() error {
 			}
 			c.regConn(co)
 			go co.run()
-
-			// FOR NOW only 1 connection, will do more soon
-			return nil
 		}
 	}
 
@@ -86,6 +84,9 @@ func (c *Client) runConnect() error {
 
 func (co *conn) run() {
 	defer co.c.unregConn(co)
+
+	atomic.AddUint32(&co.c.connCnt, 1)
+	defer atomic.AddUint32(&co.c.connCnt, ^uint32(0))
 
 	for {
 		c, err := co.dial()
@@ -112,6 +113,9 @@ func (co *conn) handle(c *websocket.Conn) error {
 	if err := co.handshake(c); err != nil {
 		return err
 	}
+
+	atomic.AddUint32(&co.c.onlineCnt, 1)
+	defer atomic.AddUint32(&co.c.onlineCnt, ^uint32(0))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

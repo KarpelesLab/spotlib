@@ -21,17 +21,18 @@ import (
 
 // Client holds information about a client, including its connections to the spot servers
 type Client struct {
-	s       *ecdsa.PrivateKey // main signer for connection/etc
-	id      *cryptutil.IDCard
-	idBin   []byte // signed id
-	idLk    sync.Mutex
-	kc      *cryptutil.Keychain
-	mWrQ    chan *spotproto.Message // message write queue
-	conns   map[string]*conn
-	connsLk sync.Mutex
-	connCnt uint32
-	inQ     map[string]chan any
-	inQLk   sync.Mutex
+	s         *ecdsa.PrivateKey // main signer for connection/etc
+	id        *cryptutil.IDCard
+	idBin     []byte // signed id
+	idLk      sync.Mutex
+	kc        *cryptutil.Keychain
+	mWrQ      chan *spotproto.Message // message write queue
+	conns     map[string]*conn
+	connsLk   sync.Mutex
+	connCnt   uint32
+	onlineCnt uint32 // number of online connections
+	inQ       map[string]chan any
+	inQLk     sync.Mutex
 }
 
 // New starts a new Client and establishes connection to the Spot system. If any key is passed,
@@ -89,6 +90,12 @@ func New(keys ...any) (*Client, error) {
 // TargetId returns the local client ID that can be used to transmit messages
 func (c *Client) TargetId() string {
 	return "k:" + base64.RawURLEncoding.EncodeToString(cryptutil.Hash(c.id.Self, sha256.New))
+}
+
+// ConnectionCount returns the number of spot server connections, and the number of
+// said connections which are online (ie. past the handshake step).
+func (c *Client) ConnectionCount() (uint32, uint32) {
+	return atomic.LoadUint32(&c.connCnt), atomic.LoadUint32(&c.onlineCnt)
 }
 
 // Query sends a non-encrypted request & waits for the response
