@@ -84,7 +84,7 @@ func New(keys ...any) (*Client, error) {
 	return c, nil
 }
 
-// Query sends a request & waits for the response
+// Query sends a non-encrypted request & waits for the response
 func (c *Client) Query(target string, body []byte) ([]byte, error) {
 	id := uuid.New()
 	ch := c.makeInQ(id.String())
@@ -92,6 +92,7 @@ func (c *Client) Query(target string, body []byte) ([]byte, error) {
 
 	msg := &spotproto.Message{
 		MessageID: id,
+		Flags:     spotproto.MsgFlagNotBottle,
 		Sender:    "/" + id.String(),
 		Recipient: target,
 		Body:      body,
