@@ -5,6 +5,8 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/sha256"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -82,6 +84,11 @@ func New(keys ...any) (*Client, error) {
 	go c.mainThread()
 
 	return c, nil
+}
+
+// TargetId returns the local client ID that can be used to transmit messages
+func (c *Client) TargetId() string {
+	return "k:" + base64.RawURLEncoding.EncodeToString(cryptutil.Hash(c.id.Self, sha256.New))
 }
 
 // Query sends a non-encrypted request & waits for the response
