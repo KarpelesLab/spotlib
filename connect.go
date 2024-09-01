@@ -88,13 +88,22 @@ func (co *conn) run() {
 	atomic.AddUint32(&co.c.connCnt, 1)
 	defer atomic.AddUint32(&co.c.connCnt, ^uint32(0))
 
+	failGiveup := 0
+
 	for {
 		c, err := co.dial()
 		if err != nil {
 			co.c.logf("failed to connect to server: %s", err)
-			// give up now so we get unreg'd and the main thread may fetch a different server later
-			return
+			failGiveup += 1
+			if failGiveup > 10 {
+				// give up so we can have a better connection later
+				return
+			}
+			time.Sleep(2 * time.Second)
+			continue
 		}
+
+		failGiveup = 0
 
 		err = co.handle(c)
 		if err != nil {
@@ -200,7 +209,7 @@ func (co *conn) handshake(c *websocket.Conn) error {
 }
 
 func (co *conn) dial() (*websocket.Conn, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	u := "wss://" + co.host + "/_websocket"
