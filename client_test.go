@@ -13,7 +13,7 @@ func TestClient(t *testing.T) {
 	h := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})
 	slog.SetDefault(slog.New(h))
 
-	c, err := spotlib.New()
+	c, err := spotlib.New(map[string]string{"testmode": "spotlib"})
 	if err != nil {
 		t.Fatalf("failed to perfor mtest: %s", err)
 		return

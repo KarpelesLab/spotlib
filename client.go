@@ -50,6 +50,7 @@ func New(params ...any) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	meta := make(map[string]string)
 
 	for _, p := range params {
 		switch v := p.(type) {
@@ -57,6 +58,10 @@ func New(params ...any) (*Client, error) {
 			c.kc.AddKey(v)
 		case cryptutil.PrivateKey:
 			c.kc.AddKey(v)
+		case map[string]string:
+			for k, s := range v {
+				meta[k] = s
+			}
 		}
 	}
 
@@ -73,6 +78,7 @@ func New(params ...any) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	c.id.Meta = meta
 	c.id.AddKeychain(c.kc)
 
 	// sign the ID
@@ -173,11 +179,7 @@ func (c *Client) handleGroups(groups [][]byte) error {
 	}
 
 	// re-sign
-	key, err := c.kc.GetSigner(c.id.Self)
-	if err != nil {
-		return err
-	}
-	idBin, err := c.id.Sign(rand.Reader, key)
+	idBin, err := c.id.Sign(rand.Reader, c.kc.FirstSigner())
 	if err != nil {
 		return err
 	}
