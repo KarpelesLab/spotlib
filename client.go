@@ -1,7 +1,6 @@
 package spotlib
 
 import (
-	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -37,7 +36,7 @@ type Client struct {
 
 // New starts a new Client and establishes connection to the Spot system. If any key is passed,
 // the first key will be used as the main signing key.
-func New(keys ...any) (*Client, error) {
+func New(params ...any) (*Client, error) {
 	c := &Client{
 		kc:    cryptutil.NewKeychain(),
 		conns: make(map[string]*conn),
@@ -52,20 +51,21 @@ func New(keys ...any) (*Client, error) {
 		return nil, err
 	}
 
-	if len(keys) == 0 {
-		keys = []any{c.s}
-	}
-
-	for _, k := range keys {
-		if err := c.kc.AddKey(k); err != nil {
-			return nil, fmt.Errorf("invalid key (type=%T): %w", k, err)
+	for _, p := range params {
+		switch v := p.(type) {
+		case *cryptutil.Keychain:
+			c.kc.AddKey(v)
+		case cryptutil.PrivateKey:
+			c.kc.AddKey(v)
 		}
 	}
 
+	c.kc.AddKey(c.s)
+
 	// this shouldn't fail at this point since the keys added successfully to the keychain, but check anyway just in case
-	pub := cryptutil.PublicKey(keys[0])
+	pub := cryptutil.PublicKey(c.kc.FirstSigner())
 	if pub == nil {
-		return nil, fmt.Errorf("bad key type %T", keys[0])
+		return nil, fmt.Errorf("bad key type %T", c.kc.FirstSigner())
 	}
 
 	// generate a client ID
@@ -76,7 +76,7 @@ func New(keys ...any) (*Client, error) {
 	c.id.AddKeychain(c.kc)
 
 	// sign the ID
-	c.idBin, err = c.id.Sign(rand.Reader, keys[0].(crypto.Signer))
+	c.idBin, err = c.id.Sign(rand.Reader, c.kc.FirstSigner())
 	if err != nil {
 		return nil, err
 	}
