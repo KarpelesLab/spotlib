@@ -76,6 +76,8 @@ func (c *Client) runConnect() error {
 			}
 			c.regConn(co)
 			go co.run()
+			// delay things a bit so we don't perform too many handshakes at the same time
+			time.Sleep(2 * time.Second)
 		}
 	}
 
@@ -190,7 +192,6 @@ func (co *conn) handshake(c *websocket.Conn) error {
 					co.c.handleGroups(obj.Groups)
 				}
 				// generate response
-				co.c.logf("sending response")
 				res, err := obj.Respond(nil, co.c.s)
 				if err != nil {
 					return err
