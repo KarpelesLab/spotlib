@@ -238,6 +238,8 @@ func (co *conn) handlePacket(dat []byte) error {
 		q := co.c.takeInQ(rcv)
 		if q != nil {
 			q <- obj
+		} else if h := co.c.getHandler(rcv); h != nil {
+			go co.c.runHandler(obj, h)
 		} else {
 			co.c.logf("unable to route packet targetted to %s", obj.Recipient)
 		}
