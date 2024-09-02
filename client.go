@@ -39,6 +39,8 @@ type Client struct {
 	inQLk     sync.Mutex
 	msghdlr   map[string]MessageHandler
 	msghdlrLk sync.RWMutex
+	idCache   map[string]*cryptutil.IDCard
+	idCacheLk sync.RWMutex
 }
 
 // New starts a new Client and establishes connection to the Spot system. If any key is passed,
@@ -50,6 +52,7 @@ func New(params ...any) (*Client, error) {
 		mWrQ:    make(chan *spotproto.Message, 4),
 		inQ:     make(map[string]chan any),
 		msghdlr: make(map[string]MessageHandler),
+		idCache: make(map[string]*cryptutil.IDCard),
 	}
 
 	// generate a new ecdsa private key
@@ -167,8 +170,30 @@ func (c *Client) GetIDCardBin(ctx context.Context, h []byte) ([]byte, error) {
 	return c.Query(ctx, "@/find", h)
 }
 
+func (c *Client) getIDCardFromCache(h []byte) *cryptutil.IDCard {
+	c.idCacheLk.RLock()
+	defer c.idCacheLk.RUnlock()
+
+	// TODO handle expiration in cache
+
+	if v, ok := c.idCache[string(h)]; ok {
+		return v
+	}
+	return nil
+}
+
+func (c *Client) setIDCardCache(h []byte, obj *cryptutil.IDCard) {
+	c.idCacheLk.Lock()
+	defer c.idCacheLk.Unlock()
+
+	c.idCache[string(h)] = obj
+}
+
 // GetIDCard returns the ID card for the given hash
 func (c *Client) GetIDCard(ctx context.Context, h []byte) (*cryptutil.IDCard, error) {
+	if obj := c.getIDCardFromCache(h); obj != nil {
+		return obj, nil
+	}
 	buf, err := c.GetIDCardBin(ctx, h)
 	if err != nil {
 		return nil, err
@@ -178,6 +203,7 @@ func (c *Client) GetIDCard(ctx context.Context, h []byte) (*cryptutil.IDCard, er
 	if err != nil {
 		return nil, err
 	}
+	c.setIDCardCache(h, idc)
 	return idc, nil
 }
 
