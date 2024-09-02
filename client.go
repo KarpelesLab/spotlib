@@ -186,6 +186,11 @@ func (c *Client) setIDCardCache(h []byte, obj *cryptutil.IDCard) {
 	c.idCacheLk.Lock()
 	defer c.idCacheLk.Unlock()
 
+	if len(c.idCache) > 1024 {
+		// cache overfill protection
+		clear(c.idCache)
+	}
+
 	c.idCache[string(h)] = obj
 }
 
