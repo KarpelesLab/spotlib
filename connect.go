@@ -92,7 +92,7 @@ func (co *conn) run() {
 
 	failGiveup := 0
 
-	for {
+	for atomic.LoadUint32(&co.c.closed) == 0 {
 		c, err := co.dial()
 		if err != nil {
 			co.c.logf("failed to connect to server: %s", err)
@@ -131,7 +131,7 @@ func (co *conn) handle(c *websocket.Conn) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	go co.handleWrites(ctx, c)
+	go co.handleWrites(ctx, cancel, c)
 
 	for {
 		mt, dat, err := c.Read(ctx)
@@ -151,10 +151,14 @@ func (co *conn) handle(c *websocket.Conn) error {
 	}
 }
 
-func (co *conn) handleWrites(ctx context.Context, wsc *websocket.Conn) {
+func (co *conn) handleWrites(ctx context.Context, cancel func(), wsc *websocket.Conn) {
+	defer cancel()
+
 	for {
 		select {
 		case <-ctx.Done():
+			return
+		case _, _ = <-co.c.alive:
 			return
 		case msg := <-co.c.mWrQ:
 			// write message

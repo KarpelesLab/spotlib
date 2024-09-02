@@ -41,6 +41,8 @@ type Client struct {
 	msghdlrLk sync.RWMutex
 	idCache   map[string]*cryptutil.IDCard
 	idCacheLk sync.RWMutex
+	alive     chan struct{}
+	closed    uint32
 }
 
 // New starts a new Client and establishes connection to the Spot system. If any key is passed,
@@ -53,6 +55,7 @@ func New(params ...any) (*Client, error) {
 		inQ:     make(map[string]chan any),
 		msghdlr: make(map[string]MessageHandler),
 		idCache: make(map[string]*cryptutil.IDCard),
+		alive:   make(chan struct{}),
 	}
 
 	// generate a new ecdsa private key
@@ -102,6 +105,14 @@ func New(params ...any) (*Client, error) {
 	go c.mainThread()
 
 	return c, nil
+}
+
+func (c *Client) Close() error {
+	if atomic.AddUint32(&c.closed, 1) == 1 {
+		close(c.alive)
+		c.alive = nil
+	}
+	return nil
 }
 
 // IDCard returns our own IDCard
