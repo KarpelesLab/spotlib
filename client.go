@@ -309,8 +309,8 @@ func (c *Client) mainThread() {
 		case <-t.C:
 			// perform checks like number of connections, etc
 			cnt := atomic.LoadUint32(&c.connCnt)
-			if cnt < 1 {
-				// need to establish connections
+			if cnt < 2 {
+				// require at least 2 active connections
 				err := c.runConnect()
 				if err != nil {
 					c.logf("failed to perform initial connection: %s", err)
