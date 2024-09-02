@@ -1,3 +1,5 @@
+[![GoDoc](https://godoc.org/github.com/KarpelesLab/spotlib?status.svg)](https://godoc.org/github.com/KarpelesLab/spotlib)
+
 # spotlib
 
 Spot connection library, allows accessing Spot and sending end to end encrypted messages to other participants.
