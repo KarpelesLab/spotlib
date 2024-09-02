@@ -1,6 +1,6 @@
 module github.com/KarpelesLab/spotlib
 
-go 1.22.2
+go 1.23
 
 require (
 	github.com/KarpelesLab/cryptutil v0.2.24

@@ -210,13 +210,18 @@ func (c *Client) QueryTimeout(timeout time.Duration, target string, body []byte)
 	return c.Query(ctx, target, body)
 }
 
-func (c *Client) GetGroupMembers(ctx context.Context, groupKey []byte) ([][]byte, error) {
+func (c *Client) GetGroupMembers(ctx context.Context, groupKey []byte) ([]string, error) {
 	buf, err := c.Query(ctx, "@/group_list", groupKey)
 	if err != nil {
 		return nil, err
 	}
 
-	return slices.Collect(slices.Chunk(buf, 32)), nil
+	var res []string
+	for h := range slices.Chunk(buf, 32) {
+		res = append(res, "k:"+base64.RawURLEncoding.EncodeToString(h))
+	}
+
+	return res, nil
 }
 
 // GetIDCardBin returns the binary ID card for the given hash
