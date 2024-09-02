@@ -36,6 +36,7 @@ type Client struct {
 	mWrQ      chan *spotproto.Message // message write queue
 	conns     map[string]*conn
 	connsLk   sync.Mutex
+	minConn   uint32
 	connCnt   uint32
 	onlineCnt uint32 // number of online connections
 	inQ       map[string]chan any
@@ -54,6 +55,7 @@ func New(params ...any) (*Client, error) {
 	c := &Client{
 		Events:  emitter.New(),
 		kc:      cryptutil.NewKeychain(),
+		minConn: 1,
 		conns:   make(map[string]*conn),
 		mWrQ:    make(chan *spotproto.Message, 4),
 		inQ:     make(map[string]chan any),
@@ -362,7 +364,7 @@ func (c *Client) mainThread() {
 		case <-t.C:
 			// perform checks like number of connections, etc
 			cnt := atomic.LoadUint32(&c.connCnt)
-			if cnt < 2 {
+			if cnt < c.minConn {
 				// require at least 2 active connections
 				err := c.runConnect()
 				if err != nil {

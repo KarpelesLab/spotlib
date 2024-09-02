@@ -46,26 +46,31 @@ func (c *Client) unregConn(co *conn) bool {
 	return false
 }
 
-func getHosts(ctx context.Context) ([]string, error) {
+func getHosts(ctx context.Context) ([]string, uint32, error) {
 	// call Spot:connect API to fetch hosts we can connect to
 	var res *struct {
-		Hosts []string `json:"hosts"`
+		Hosts   []string `json:"hosts"`
+		MinConn uint32   `json:"min_conn"`
 	}
 	err := rest.Apply(ctx, "Spot:connect", "GET", nil, &res)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return res.Hosts, nil
+	return res.Hosts, res.MinConn, nil
 }
 
 func (c *Client) runConnect() error {
-	hosts, err := getHosts(context.Background())
+	hosts, minConn, err := getHosts(context.Background())
 	if err != nil {
 		return err
+	}
+	if minConn == 0 {
+		minConn = uint32(len(hosts))
 	}
 	if len(hosts) > 10 {
 		hosts = hosts[:10]
 	}
+	c.minConn = minConn
 
 	for _, h := range hosts {
 		if c.getConn(h) == nil {
