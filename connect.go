@@ -125,8 +125,8 @@ func (co *conn) handle(c *websocket.Conn) error {
 		return err
 	}
 
-	atomic.AddUint32(&co.c.onlineCnt, 1)
-	defer atomic.AddUint32(&co.c.onlineCnt, ^uint32(0))
+	co.c.onlineIncr()
+	defer co.c.onlineDecr()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/KarpelesLab/cryptutil"
+	"github.com/KarpelesLab/emitter"
 	"github.com/KarpelesLab/spotproto"
 	"github.com/fxamacker/cbor/v2"
 	"github.com/google/uuid"
@@ -26,6 +27,7 @@ type MessageHandler func(msg *spotproto.Message) ([]byte, error)
 // Client holds information about a client, including its connections to the spot servers
 type Client struct {
 	s         *ecdsa.PrivateKey // main signer for connection/etc
+	Events    *emitter.Hub
 	id        *cryptutil.IDCard
 	idBin     []byte // signed id
 	idLk      sync.Mutex
@@ -49,6 +51,7 @@ type Client struct {
 // the first key will be used as the main signing key.
 func New(params ...any) (*Client, error) {
 	c := &Client{
+		Events:  emitter.New(),
 		kc:      cryptutil.NewKeychain(),
 		conns:   make(map[string]*conn),
 		mWrQ:    make(chan *spotproto.Message, 4),
@@ -492,4 +495,18 @@ func (c *Client) safeRunHandler(msg *spotproto.Message, h MessageHandler) (buf [
 
 	buf, err = h(msg)
 	return
+}
+
+func (c *Client) onlineIncr() {
+	if atomic.AddUint32(&c.onlineCnt, 1) == 1 {
+		// we went from 0 to 1, emit event
+		go c.Events.EmitTimeout(15*time.Second, "status", 1)
+	}
+}
+
+func (c *Client) onlineDecr() {
+	if atomic.AddUint32(&c.onlineCnt, ^uint32(0)) == 0 {
+		// we went offline, emit event
+		go c.Events.EmitTimeout(15*time.Second, "status", 0)
+	}
 }
