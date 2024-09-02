@@ -321,6 +321,11 @@ func (c *Client) decodeMessage(rid *cryptutil.IDCard, payload []byte) ([]byte, e
 
 // SendTo encrypts and sends a payload to the given target
 func (c *Client) SendTo(ctx context.Context, target string, payload []byte) error {
+	return c.SendToWithFrom(ctx, target, payload, "")
+}
+
+// SendToWithFrom encrypts and sends a payload to the given target, with the option to set the sender endpoint
+func (c *Client) SendToWithFrom(ctx context.Context, target string, payload []byte, from string) error {
 	rid, err := c.GetIDCardForRecipient(ctx, target)
 	if err != nil {
 		return fmt.Errorf("failed to find recipient: %w", err)
@@ -333,10 +338,17 @@ func (c *Client) SendTo(ctx context.Context, target string, payload []byte) erro
 
 	id := uuid.New()
 
+	if from == "" {
+		from = "/" + id.String()
+	}
+	if from[0] != '/' {
+		return errors.New("invalid from address for packet")
+	}
+
 	msg := &spotproto.Message{
 		MessageID: id,
 		Flags:     0,
-		Sender:    "/" + id.String(),
+		Sender:    from,
 		Recipient: target,
 		Body:      body,
 	}
