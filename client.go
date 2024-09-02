@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -205,6 +206,15 @@ func (c *Client) QueryTimeout(timeout time.Duration, target string, body []byte)
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	return c.Query(ctx, target, body)
+}
+
+func (c *Client) GetGroupMembers(ctx context.Context, groupKey []byte) ([][]byte, error) {
+	buf, err := c.Query(ctx, "@/group_list", groupKey)
+	if err != nil {
+		return nil, err
+	}
+
+	return slices.Collect(slices.Chunk(buf, 32)), nil
 }
 
 // GetIDCardBin returns the binary ID card for the given hash
