@@ -189,7 +189,7 @@ func (c *Client) GetIDCardForRecipient(ctx context.Context, rcv string) (*cryptu
 	}
 	rcvA := strings.Split(rcv, ":")
 	if len(rcvA) == 1 || rcvA[0] != "k" {
-		return nil, errors.New("invalid recipient")
+		return nil, fmt.Errorf("invalid recipient %s", rcv)
 	}
 	h, err := base64.RawURLEncoding.DecodeString(rcvA[len(rcvA)-1])
 	if err != nil {

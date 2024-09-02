@@ -12,6 +12,7 @@ import (
 
 	"github.com/KarpelesLab/cryptutil"
 	"github.com/KarpelesLab/spotlib"
+	"github.com/KarpelesLab/spotproto"
 )
 
 func TestClient(t *testing.T) {
@@ -41,5 +42,20 @@ func TestClient(t *testing.T) {
 	}
 	log.Printf("got self id = %x", cryptutil.Hash(idc.Self, sha256.New))
 
+	hQ := make(chan []byte, 2)
+
+	c.SetHandler("test1", func(msg *spotproto.Message) ([]byte, error) {
+		hQ <- msg.Body
+		return nil, nil
+	})
+
 	// send an encrypted message to ourselves
+	err = c.SendTo(context.Background(), c.TargetId()+"/test1", []byte("hello world"))
+	if err != nil {
+		t.Fatalf("failed to send msg: %s", err)
+	}
+	dat := <-hQ
+	if string(dat) != "hello world" {
+		t.Fatalf("bad message: %s", dat)
+	}
 }
