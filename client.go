@@ -329,6 +329,17 @@ func (c *Client) takeInQ(key string) chan any {
 	return nil
 }
 
+func (c *Client) SetHandler(endpoint string, handler MessageHandler) {
+	c.msghdlrLk.Lock()
+	defer c.msghdlrLk.Unlock()
+
+	if handler == nil {
+		delete(c.msghdlr, endpoint)
+	} else {
+		c.msghdlr[endpoint] = handler
+	}
+}
+
 func (c *Client) getHandler(endpoint string) MessageHandler {
 	c.msghdlrLk.RLock()
 	defer c.msghdlrLk.RUnlock()
