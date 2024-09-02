@@ -134,7 +134,8 @@ func (c *Client) ConnectionCount() (uint32, uint32) {
 	return atomic.LoadUint32(&c.connCnt), atomic.LoadUint32(&c.onlineCnt)
 }
 
-// Query sends a non-encrypted request & waits for the response
+// Query sends a request & waits for the response. If the target is a key (starts with k:) the
+// message will be encrypted & signed so only the recipient can open it.
 func (c *Client) Query(ctx context.Context, target string, body []byte) ([]byte, error) {
 	if len(target) == 0 {
 		return nil, errors.New("invalid target")
