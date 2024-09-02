@@ -5,7 +5,7 @@ go 1.22.2
 require (
 	github.com/KarpelesLab/cryptutil v0.2.24
 	github.com/KarpelesLab/rest v0.5.21
-	github.com/KarpelesLab/spotproto v0.1.6
+	github.com/KarpelesLab/spotproto v0.1.7
 	github.com/coder/websocket v1.8.12
 	github.com/fxamacker/cbor/v2 v2.7.0
 	github.com/google/uuid v1.6.0

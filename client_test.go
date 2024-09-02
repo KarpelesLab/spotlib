@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"errors"
 	"log"
 	"log/slog"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -49,6 +51,14 @@ func TestClient(t *testing.T) {
 		return nil, nil
 	})
 
+	c.SetHandler("test2", func(msg *spotproto.Message) ([]byte, error) {
+		if !msg.IsEncrypted() {
+			return nil, errors.New("only accepts encrypted messages")
+		}
+		res := strings.ToUpper(string(msg.Body))
+		return []byte(res), nil
+	})
+
 	// send an encrypted message to ourselves
 	err = c.SendTo(context.Background(), c.TargetId()+"/test1", []byte("hello world"))
 	if err != nil {
@@ -57,5 +67,12 @@ func TestClient(t *testing.T) {
 	dat := <-hQ
 	if string(dat) != "hello world" {
 		t.Fatalf("bad message: %s", dat)
+	}
+
+	v, err := c.Query(context.Background(), c.TargetId()+"/test2", []byte("hello world"))
+	if err != nil {
+		t.Fatalf("failed to send msg: %s", err)
+	} else if string(v) != "HELLO WORLD" {
+		t.Fatalf("invalid response to query: %s", v)
 	}
 }

@@ -122,13 +122,36 @@ func (c *Client) ConnectionCount() (uint32, uint32) {
 
 // Query sends a non-encrypted request & waits for the response
 func (c *Client) Query(ctx context.Context, target string, body []byte) ([]byte, error) {
+	if len(target) == 0 {
+		return nil, errors.New("invalid target")
+	}
+
+	var msgFlags uint64
+	var rid *cryptutil.IDCard
+	var err error
+
+	switch target[0] {
+	case 'k':
+		// encrypt
+		rid, err = c.GetIDCardForRecipient(ctx, target)
+		if err != nil {
+			return nil, err
+		}
+		body, err = c.prepareMessage(rid, body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to prepare query message: %w", err)
+		}
+	default:
+		msgFlags |= spotproto.MsgFlagNotBottle
+	}
+
 	id := uuid.New()
 	ch := c.makeInQ(id.String())
 	defer c.takeInQ(id.String())
 
 	msg := &spotproto.Message{
 		MessageID: id,
-		Flags:     spotproto.MsgFlagNotBottle,
+		Flags:     msgFlags,
 		Sender:    "/" + id.String(),
 		Recipient: target,
 		Body:      body,
@@ -147,9 +170,14 @@ func (c *Client) Query(ctx context.Context, target string, body []byte) ([]byte,
 	case v := <-ch:
 		// got a response
 		switch obj := v.(type) {
-		case []byte:
-			return obj, nil
 		case *spotproto.Message:
+			if rid != nil {
+				// decrypt message
+				obj.Body, err = c.decodeMessage(rid, obj.Body)
+				if err != nil {
+					return nil, fmt.Errorf("failed to decode response: %w", err)
+				}
+			}
 			return obj.Body, nil
 		default:
 			return nil, fmt.Errorf("invalid message response type %T", v)
@@ -432,7 +460,7 @@ func (c *Client) runHandler(msg *spotproto.Message, h MessageHandler) {
 		MessageID: msg.MessageID,
 		Flags:     resFlags,
 		Recipient: msg.Sender,
-		Sender:    msg.Recipient,
+		Sender:    "/noreply",
 		Body:      res,
 	}
 
