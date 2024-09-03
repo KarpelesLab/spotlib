@@ -128,7 +128,7 @@ func (c *Client) IDCard() *cryptutil.IDCard {
 
 // TargetId returns the local client ID that can be used to transmit messages
 func (c *Client) TargetId() string {
-	return "k:" + base64.RawURLEncoding.EncodeToString(cryptutil.Hash(c.id.Self, sha256.New))
+	return "k." + base64.RawURLEncoding.EncodeToString(cryptutil.Hash(c.id.Self, sha256.New))
 }
 
 // ConnectionCount returns the number of spot server connections, and the number of
@@ -218,7 +218,7 @@ func (c *Client) GetGroupMembers(ctx context.Context, groupKey []byte) ([]string
 
 	var res []string
 	for h := range slices.Chunk(buf, 32) {
-		res = append(res, "k:"+base64.RawURLEncoding.EncodeToString(h))
+		res = append(res, "k."+base64.RawURLEncoding.EncodeToString(h))
 	}
 
 	return res, nil
@@ -278,7 +278,7 @@ func (c *Client) GetIDCardForRecipient(ctx context.Context, rcv string) (*cryptu
 	if pos := strings.IndexByte(rcv, '/'); pos > 0 {
 		rcv = rcv[:pos]
 	}
-	rcvA := strings.Split(rcv, ":")
+	rcvA := strings.Split(rcv, ".")
 	if len(rcvA) == 1 || rcvA[0] != "k" {
 		return nil, fmt.Errorf("invalid recipient %s", rcv)
 	}

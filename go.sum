@@ -32,6 +32,8 @@ github.com/KarpelesLab/spotproto v0.1.6 h1:omJOTFnj7xkHEYDTWZlwLRM0k18p07r8le0lf
 github.com/KarpelesLab/spotproto v0.1.6/go.mod h1:2Mq2NRSCGbSmPVQzn+YxaRsdsXl6uo/CLS9VR/Bzzb4=
 github.com/KarpelesLab/spotproto v0.1.7 h1:yZ0UNcSMLWUn8qROKtIWQJA3/+X5qx02MbTXtfyzObQ=
 github.com/KarpelesLab/spotproto v0.1.7/go.mod h1:2Mq2NRSCGbSmPVQzn+YxaRsdsXl6uo/CLS9VR/Bzzb4=
+github.com/KarpelesLab/spotproto v0.2.0 h1:2ZswrQ0yf/PmTdHc5gzZiiB+0A/ErGv+vsJ5lfufBYo=
+github.com/KarpelesLab/spotproto v0.2.0/go.mod h1:y4NmEkiK2i+INDka6rtc2C15khAGQRMRAqaW9oCJrE0=
 github.com/KarpelesLab/typutil v0.2.13 h1:9m9drR8aIe2MaNh9hAuM39Zecgx6uvtlVurUOlE+1vk=
 github.com/KarpelesLab/typutil v0.2.13/go.mod h1:lqs248XpjFstgZMT5ZVP4/3B6zT7eEeq5kKj4/tC1IQ=
 github.com/KarpelesLab/typutil v0.2.16 h1:uVA+2/NfmQ6nzNsy8Eh4q3AuyWGWnqHKyQ4llbTwt+o=
