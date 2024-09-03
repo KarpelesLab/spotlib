@@ -27,26 +27,27 @@ type MessageHandler func(msg *spotproto.Message) ([]byte, error)
 
 // Client holds information about a client, including its connections to the spot servers
 type Client struct {
-	s         *ecdsa.PrivateKey // main signer for connection/etc
-	Events    *emitter.Hub
-	id        *cryptutil.IDCard
-	idBin     []byte // signed id
-	idLk      sync.Mutex
-	kc        *cryptutil.Keychain
-	mWrQ      chan *spotproto.Message // message write queue
-	conns     map[string]*conn
-	connsLk   sync.Mutex
-	minConn   uint32
-	connCnt   uint32
-	onlineCnt uint32 // number of online connections
-	inQ       map[string]chan any
-	inQLk     sync.Mutex
-	msghdlr   map[string]MessageHandler
-	msghdlrLk sync.RWMutex
-	idCache   map[string]*cryptutil.IDCard
-	idCacheLk sync.RWMutex
-	alive     chan struct{}
-	closed    uint32
+	s           *ecdsa.PrivateKey // main signer for connection/etc
+	Events      *emitter.Hub
+	id          *cryptutil.IDCard
+	idBin       []byte // signed id
+	idLk        sync.Mutex
+	kc          *cryptutil.Keychain
+	mWrQ        chan *spotproto.Message // message write queue
+	conns       map[string]*conn
+	connsLk     sync.Mutex
+	minConn     uint32
+	connCnt     uint32
+	onlineCnt   uint32 // number of online connections
+	onlineCntLk sync.RWMutex
+	inQ         map[string]chan any
+	inQLk       sync.Mutex
+	msghdlr     map[string]MessageHandler
+	msghdlrLk   sync.RWMutex
+	idCache     map[string]*cryptutil.IDCard
+	idCacheLk   sync.RWMutex
+	alive       chan struct{}
+	closed      uint32
 }
 
 // New starts a new Client and establishes connection to the Spot system. If any key is passed,
@@ -528,14 +529,21 @@ func (c *Client) safeRunHandler(msg *spotproto.Message, h MessageHandler) (buf [
 }
 
 func (c *Client) onlineIncr() {
-	if atomic.AddUint32(&c.onlineCnt, 1) == 1 {
+	c.onlineCntLk.Lock()
+	defer c.onlineCntLk.Unlock()
+	c.onlineCnt += 1
+	if c.onlineCnt == 1 {
 		// we went from 0 to 1, emit event
 		go c.Events.EmitTimeout(15*time.Second, "status", 1)
 	}
 }
 
 func (c *Client) onlineDecr() {
-	if atomic.AddUint32(&c.onlineCnt, ^uint32(0)) == 0 {
+	c.onlineCntLk.Lock()
+	defer c.onlineCntLk.Unlock()
+
+	c.onlineCnt -= 1
+	if c.onlineCnt == 0 {
 		// we went offline, emit event
 		go c.Events.EmitTimeout(15*time.Second, "status", 0)
 	}
