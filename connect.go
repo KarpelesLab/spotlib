@@ -193,7 +193,7 @@ func (co *conn) handshake(c *websocket.Conn) error {
 			switch obj := pkt.(type) {
 			case *spotproto.HandshakeRequest:
 				if obj.Ready {
-					co.c.logf("authentication done, connected as c:%s", obj.ClientId)
+					co.c.logf("authentication done, connected as c.%s", obj.ClientId)
 					return nil
 				}
 				if obj.Groups != nil {
