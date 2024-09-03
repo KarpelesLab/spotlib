@@ -274,7 +274,7 @@ func (c *Client) GetIDCard(ctx context.Context, h []byte) (*cryptutil.IDCard, er
 
 // GetIDCardForRecipient returns the ID Card of a given recipient, if any
 func (c *Client) GetIDCardForRecipient(ctx context.Context, rcv string) (*cryptutil.IDCard, error) {
-	// rcv has the format: k:<base64url hash>/<endpoint>
+	// rcv has the format: k.<base64url hash>/<endpoint>
 	if pos := strings.IndexByte(rcv, '/'); pos > 0 {
 		rcv = rcv[:pos]
 	}
