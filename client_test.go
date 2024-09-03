@@ -26,6 +26,8 @@ func TestClient(t *testing.T) {
 		t.Fatalf("failed to perfor mtest: %s", err)
 		return
 	}
+	c.WaitOnline()
+
 	res, err := c.QueryTimeout(10*time.Second, "@/version", nil)
 	if err != nil {
 		t.Fatalf("failed to request version: %s", err)
