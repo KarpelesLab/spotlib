@@ -81,6 +81,8 @@ func New(params ...any) (*Client, error) {
 			c.kc.AddKey(v)
 		case cryptutil.PrivateKey:
 			c.kc.AddKey(v)
+		case *emitter.Hub:
+			c.Events = v
 		case map[string]string:
 			for k, s := range v {
 				meta[k] = s
