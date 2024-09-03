@@ -40,6 +40,7 @@ type Client struct {
 	connCnt     uint32
 	onlineCnt   uint32 // number of online connections
 	onlineCntLk sync.RWMutex
+	onlineCond  *sync.Cond
 	inQ         map[string]chan any
 	inQLk       sync.Mutex
 	msghdlr     map[string]MessageHandler
@@ -64,6 +65,7 @@ func New(params ...any) (*Client, error) {
 		idCache: make(map[string]*cryptutil.IDCard),
 		alive:   make(chan struct{}),
 	}
+	c.onlineCond = sync.NewCond(c.onlineCntLk.RLocker())
 
 	// generate a new ecdsa private key
 	var err error
@@ -535,6 +537,7 @@ func (c *Client) onlineIncr() {
 	if c.onlineCnt == 1 {
 		// we went from 0 to 1, emit event
 		go c.Events.EmitTimeout(15*time.Second, "status", 1)
+		c.onlineCond.Broadcast()
 	}
 }
 
@@ -546,5 +549,17 @@ func (c *Client) onlineDecr() {
 	if c.onlineCnt == 0 {
 		// we went offline, emit event
 		go c.Events.EmitTimeout(15*time.Second, "status", 0)
+	}
+}
+
+func (c *Client) WaitOnline() {
+	c.onlineCntLk.RLock()
+	defer c.onlineCntLk.RUnlock()
+
+	for {
+		if c.onlineCnt > 0 {
+			return
+		}
+		c.onlineCond.Wait()
 	}
 }
