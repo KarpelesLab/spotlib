@@ -21,7 +21,17 @@ func TestClient(t *testing.T) {
 	h := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})
 	slog.SetDefault(slog.New(h))
 
-	c, err := spotlib.New(map[string]string{"testmode": "spotlib"})
+	handlers := map[string]spotlib.MessageHandler{
+		"test2": func(msg *spotproto.Message) ([]byte, error) {
+			if !msg.IsEncrypted() {
+				return nil, errors.New("only accepts encrypted messages")
+			}
+			res := strings.ToUpper(string(msg.Body))
+			return []byte(res), nil
+		},
+	}
+
+	c, err := spotlib.New(map[string]string{"testmode": "spotlib"}, handlers)
 	if err != nil {
 		t.Fatalf("failed to perfor mtest: %s", err)
 		return
@@ -51,14 +61,6 @@ func TestClient(t *testing.T) {
 	c.SetHandler("test1", func(msg *spotproto.Message) ([]byte, error) {
 		hQ <- msg.Body
 		return nil, nil
-	})
-
-	c.SetHandler("test2", func(msg *spotproto.Message) ([]byte, error) {
-		if !msg.IsEncrypted() {
-			return nil, errors.New("only accepts encrypted messages")
-		}
-		res := strings.ToUpper(string(msg.Body))
-		return []byte(res), nil
 	})
 
 	// send an encrypted message to ourselves
