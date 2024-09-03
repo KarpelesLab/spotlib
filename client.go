@@ -2,9 +2,11 @@ package spotlib
 
 import (
 	"context"
+	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/rsa"
 	"crypto/sha256"
 	"encoding/base64"
 	"errors"
@@ -25,7 +27,7 @@ import (
 
 // Client holds information about a client, including its connections to the spot servers
 type Client struct {
-	s           *ecdsa.PrivateKey // main signer for connection/etc
+	s           crypto.Signer // main signer for connection/etc
 	Events      *emitter.Hub
 	id          *cryptutil.IDCard
 	idBin       []byte // signed id
@@ -67,10 +69,6 @@ func New(params ...any) (*Client, error) {
 
 	// generate a new ecdsa private key
 	var err error
-	c.s, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		return nil, err
-	}
 	meta := make(map[string]string)
 
 	for _, p := range params {
@@ -94,7 +92,22 @@ func New(params ...any) (*Client, error) {
 		}
 	}
 
-	c.kc.AddKey(c.s)
+	for k := range c.kc.All {
+		switch s := k.(type) {
+		case *ecdsa.PrivateKey:
+			c.s = s
+		case *rsa.PrivateKey:
+			c.s = s
+		}
+	}
+
+	if c.s == nil {
+		c.s, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		if err != nil {
+			return nil, err
+		}
+		c.kc.AddKey(c.s)
+	}
 
 	// this shouldn't fail at this point since the keys added successfully to the keychain, but check anyway just in case
 	pub := cryptutil.PublicKey(c.kc.FirstSigner())
