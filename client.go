@@ -89,6 +89,8 @@ func New(params ...any) (*Client, error) {
 			for k, s := range v {
 				meta[k] = s
 			}
+		default:
+			return nil, fmt.Errorf("unsupported parameter type %T", p)
 		}
 	}
 
