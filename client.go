@@ -219,6 +219,9 @@ func (c *Client) Query(ctx context.Context, target string, body []byte) ([]byte,
 					return nil, fmt.Errorf("failed to decode response: %w", err)
 				}
 			}
+			if obj.Flags&spotproto.MsgFlagError != 0 {
+				return nil, errors.New(string(obj.Body))
+			}
 			return obj.Body, nil
 		default:
 			return nil, fmt.Errorf("invalid message response type %T", v)
