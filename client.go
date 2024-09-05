@@ -9,6 +9,7 @@ import (
 	"crypto/rsa"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -309,6 +310,19 @@ func (c *Client) GetIDCardForRecipient(ctx context.Context, rcv string) (*cryptu
 		return nil, err
 	}
 	return c.GetIDCard(ctx, h)
+}
+
+func (c *Client) GetTime(ctx context.Context) (time.Time, error) {
+	res, err := c.Query(ctx, "@/time", nil)
+	if err != nil {
+		return time.Time{}, err
+	}
+	if len(res) < 12 {
+		return time.Time{}, errors.New("unable to parse time from server")
+	}
+	u := binary.BigEndian.Uint64(res[:8])
+	n := binary.BigEndian.Uint32(res[8:12])
+	return time.Unix(int64(u), int64(n)), nil
 }
 
 func (c *Client) prepareMessage(rid *cryptutil.IDCard, payload []byte) ([]byte, error) {
