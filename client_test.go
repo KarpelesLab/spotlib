@@ -45,6 +45,12 @@ func TestClient(t *testing.T) {
 	}
 	log.Printf("server version = %s", res)
 
+	tim, err := c.GetTime(context.Background())
+	if err != nil {
+		t.Fatalf("failed to request time: %s", err)
+	}
+	log.Printf("server time: %s", tim)
+
 	// attempt to get our own IDcard
 	idc, err := c.GetIDCard(context.Background(), cryptutil.Hash(c.IDCard().Self, sha256.New))
 	if err != nil {
