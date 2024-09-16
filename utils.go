@@ -26,9 +26,10 @@ func writeVarString(w io.Writer, s []byte) error {
 //
 // Usage:
 //
-// spotlib.WithTimeout(nil, 30*time.Second, func(ctx context.Context) {
-//    res, err = c.methodWithCtx(ctx)
-// }
+//	spotlib.WithTimeout(nil, 30*time.Second, func(ctx context.Context) {
+//	   res, err = c.methodWithCtx(ctx)
+//	}
+//
 // if err := nil { ...
 func WithTimeout(ctx context.Context, timeout time.Duration, cb func(context.Context)) {
 	if ctx == nil {
