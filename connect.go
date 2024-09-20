@@ -15,6 +15,7 @@ import (
 
 type conn struct {
 	host string
+	wr   chan []byte
 	c    *Client
 }
 
@@ -78,6 +79,7 @@ func (c *Client) runConnect() error {
 			co := &conn{
 				host: h,
 				c:    c,
+				wr:   make(chan []byte),
 			}
 			c.regConn(co)
 			go co.run()
@@ -170,12 +172,15 @@ func (co *conn) handleWrites(ctx context.Context, cancel func(), wsc *websocket.
 			buf := msg.Bytes()
 			buf = append([]byte{spotproto.InstantMsg}, buf...)
 			wsc.Write(ctx, websocket.MessageBinary, buf)
+		case buf := <-co.wr:
+			wsc.Write(ctx, websocket.MessageBinary, buf)
 		}
 	}
 }
 
 func (co *conn) handshake(c *websocket.Conn) error {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
 
 	for {
 		mt, dat, err := c.Read(ctx)
@@ -237,6 +242,24 @@ func (co *conn) handlePacket(dat []byte) error {
 	}
 
 	switch obj := pkt.(type) {
+	case *spotproto.HandshakeRequest:
+		if obj.Ready {
+			return nil
+		}
+		if obj.Groups != nil {
+			// need to re-compute key
+			co.c.handleGroups(obj.Groups)
+		}
+		// generate response
+		res, err := obj.Respond(nil, co.c.s)
+		if err != nil {
+			return err
+		}
+		res.ID = co.c.idBin
+		// send
+		buf := append([]byte{spotproto.Handshake}, res.Bytes()...)
+		co.wr <- buf
+		return nil
 	case *spotproto.Message:
 		// Recipient:c:4p84:conn-ubzvcl-h7yv-g7pe-tfp6-mddcsqtu/699ec197-d329-45bd-9306-b29f2ff99ac9
 		rcv := obj.Recipient
