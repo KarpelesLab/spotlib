@@ -453,7 +453,7 @@ func (c *Client) onlineIncr() {
 	c.onlineCnt += 1
 	if c.onlineCnt == 1 {
 		// we went from 0 to 1, emit event
-		go c.Events.EmitTimeout(15*time.Second, "status", 1)
+		go c.Events.EmitTimeout(15*time.Second, "status", 1, c.onlineCnt, atomic.LoadUint32(&c.connCnt))
 		c.Events.Push("online")
 	}
 }
@@ -465,7 +465,7 @@ func (c *Client) onlineDecr() {
 	c.onlineCnt -= 1
 	if c.onlineCnt == 0 {
 		// we went offline, emit event
-		go c.Events.EmitTimeout(15*time.Second, "status", 0)
+		go c.Events.EmitTimeout(15*time.Second, "status", 0, c.onlineCnt, atomic.LoadUint32(&c.connCnt))
 	}
 }
 
