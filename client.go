@@ -67,6 +67,7 @@ func New(params ...any) (*Client, error) {
 		alive:   make(chan struct{}),
 	}
 	c.onlineCond = sync.NewCond(c.onlineCntLk.RLocker())
+	c.setDefaultHandlers()
 
 	// generate a new ecdsa private key
 	var err error
