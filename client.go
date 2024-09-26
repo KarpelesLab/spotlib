@@ -474,6 +474,10 @@ func (c *Client) WaitOnline(ctx context.Context) error {
 	l := c.Events.Trigger("online").Listen()
 	defer l.Release()
 
+	if c.onlineCnt > 0 {
+		return nil
+	}
+
 	for {
 		select {
 		case <-l.C:

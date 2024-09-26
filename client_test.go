@@ -36,7 +36,7 @@ func TestClient(t *testing.T) {
 		t.Fatalf("failed to perfor mtest: %s", err)
 		return
 	}
-	c.WaitOnline()
+	c.WaitOnline(context.Background())
 
 	res, err := c.QueryTimeout(10*time.Second, "@/version", nil)
 	if err != nil {
@@ -88,4 +88,33 @@ func TestClient(t *testing.T) {
 	} else if string(v) != "HELLO WORLD" {
 		t.Fatalf("invalid response to query: %s", v)
 	}
+
+	c2, err := spotlib.New(map[string]string{"testmode": "spotlib"})
+	if err != nil {
+		t.Fatalf("failed to perform second co: %s", err)
+		return
+	}
+	c2.WaitOnline(context.Background())
+
+	// attempt to query c via c2
+	v, err = c2.Query(context.Background(), c.TargetId()+"/test2", []byte("hello from afar"))
+	if err != nil {
+		t.Fatalf("failed to send msg: %s", err)
+	} else if string(v) != "HELLO FROM AFAR" {
+		t.Fatalf("invalid response to query: %s", v)
+	}
+
+	// attempt to ping c2
+	v, err = c.Query(context.Background(), c2.TargetId()+"/ping", []byte("ping buffer"))
+	if err != nil {
+		t.Fatalf("failed to send msg: %s", err)
+	} else if string(v) != "ping buffer" {
+		t.Fatalf("invalid response to query: %s", v)
+	}
+
+	v, err = c.Query(context.Background(), c2.TargetId()+"/version", nil)
+	if err != nil {
+		t.Fatalf("failed to send msg: %s", err)
+	}
+	log.Printf("got version = %s", v)
 }
