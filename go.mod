@@ -4,7 +4,7 @@ go 1.23
 
 require (
 	github.com/KarpelesLab/cryptutil v0.2.25
-	github.com/KarpelesLab/emitter v0.1.0
+	github.com/KarpelesLab/emitter v0.2.1
 	github.com/KarpelesLab/rest v0.5.21
 	github.com/KarpelesLab/spotproto v0.2.0
 	github.com/coder/websocket v1.8.12

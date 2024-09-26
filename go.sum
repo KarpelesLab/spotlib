@@ -18,6 +18,10 @@ github.com/KarpelesLab/cryptutil v0.2.25 h1:ZgX9NXxIgmEEnkCI3zGJYwXlqrlhXfqf/nGm
 github.com/KarpelesLab/cryptutil v0.2.25/go.mod h1:2gBM1JlpscOqYSE08hoOug3pFpR2Hh6EV/6aK7ZANqQ=
 github.com/KarpelesLab/emitter v0.1.0 h1:MQqtI4B4linBLuvPlXXb3wB4ujtCw5yDeFQwTwCsAHA=
 github.com/KarpelesLab/emitter v0.1.0/go.mod h1:JOaQADpNVN0OJfhkDurRCUkMEotPM8Pukh3DadTOY+4=
+github.com/KarpelesLab/emitter v0.2.0 h1:EVPud0etxlexaJPyufEP38Syywdhf0I7te9Y41xgYuY=
+github.com/KarpelesLab/emitter v0.2.0/go.mod h1:JOaQADpNVN0OJfhkDurRCUkMEotPM8Pukh3DadTOY+4=
+github.com/KarpelesLab/emitter v0.2.1 h1:DlWLjZAa2c9wc02K5f4zHAt0Jv1C1tQgLgT7VbF7yYI=
+github.com/KarpelesLab/emitter v0.2.1/go.mod h1:JOaQADpNVN0OJfhkDurRCUkMEotPM8Pukh3DadTOY+4=
 github.com/KarpelesLab/pjson v0.1.9 h1:JVmm61sLRVb+5YkUDacgM1FlB9CTOsCUhEvF+OzUMf0=
 github.com/KarpelesLab/pjson v0.1.9/go.mod h1:gb4uSTld7I2kO2WvLdat1mN1brsS1hzSR+dWw1hL3iU=
 github.com/KarpelesLab/rest v0.5.20 h1:foQXapCgJ3mYSkxCO6ljZDRMolo8ptiJW7TbJmb9QjE=
