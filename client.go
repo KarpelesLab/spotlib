@@ -249,6 +249,75 @@ func (c *Client) GetGroupMembers(ctx context.Context, groupKey []byte) ([]string
 	return res, nil
 }
 
+// StoreBlob stores the given value under the given key after encrypting it in a way that
+// can only be retrieved by this client specifically, using the same private key. This can
+// be useful to store some settings local to the node that may need to be re-obtained,
+// however this method is to be considered best-effort and shouldn't be used for intensive
+// storage activity. Note also that value will have a limit of slightly less than 49kB.
+//
+// Data may also be purged after some time without access.
+func (c *Client) StoreBlob(ctx context.Context, key string, value []byte) error {
+	if len(value) == 0 {
+		// handle this as a delete
+		_, err := c.Query(ctx, "@/store_blob", []byte(key+"\x00"))
+		return err
+	}
+	b := cryptutil.NewBottle(value)
+	err := b.Encrypt(rand.Reader, c.id)
+	if err != nil {
+		return err
+	}
+	b.BottleUp()
+	var sigErr error
+	var sigCnt int
+	for signer := range c.kc.Signers {
+		if err = b.Sign(rand.Reader, signer); err != nil {
+			sigErr = err
+		} else {
+			sigCnt += 1
+		}
+	}
+	if sigCnt == 0 {
+		if sigErr == nil {
+			sigErr = errors.New("no signature key was available")
+		}
+		return fmt.Errorf("could not sign blob: %w", sigErr)
+	}
+	// cbor encode
+	buf, err := cbor.Marshal(b)
+	if err != nil {
+		return err
+	}
+	// store
+	_, err = c.Query(ctx, "@/store_blob", append([]byte(key+"\x00"), buf...))
+	return err
+}
+
+// FetchBlob fetches a blob previously stored with StoreBlob. The operation can be
+// slow and is provided as best effort. The data will be decrypted and verified.
+func (c *Client) FetchBlob(ctx context.Context, key string) ([]byte, error) {
+	buf, err := c.Query(ctx, "@/fetch_blob", []byte(key))
+	if err != nil {
+		return nil, err
+	}
+	op, err := cryptutil.NewOpener(c.kc)
+	if err != nil {
+		return nil, err
+	}
+	data, info, err := op.OpenCbor(buf)
+	if err != nil {
+		return nil, err
+	}
+	if !info.SignedBy(c.id) {
+		return nil, errors.New("data was not signed by us")
+	}
+	if info.Decryption == 0 {
+		return nil, errors.New("data was not encrypted")
+	}
+
+	return data, nil
+}
+
 // GetIDCardBin returns the binary ID card for the given hash
 func (c *Client) GetIDCardBin(ctx context.Context, h []byte) ([]byte, error) {
 	// TODO add local cache

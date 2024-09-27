@@ -16,6 +16,8 @@ github.com/KarpelesLab/cryptutil v0.2.24 h1:kD4NvTxqYUWK/AtS3RQ16Sz97WXuy7nIIwCD
 github.com/KarpelesLab/cryptutil v0.2.24/go.mod h1:2gBM1JlpscOqYSE08hoOug3pFpR2Hh6EV/6aK7ZANqQ=
 github.com/KarpelesLab/cryptutil v0.2.25 h1:ZgX9NXxIgmEEnkCI3zGJYwXlqrlhXfqf/nGmGMERrUM=
 github.com/KarpelesLab/cryptutil v0.2.25/go.mod h1:2gBM1JlpscOqYSE08hoOug3pFpR2Hh6EV/6aK7ZANqQ=
+github.com/KarpelesLab/cryptutil v0.2.29 h1:ADDyIjCfVdgra/l//0Iw+5WXEUDKE7f7fKU0AoFgB48=
+github.com/KarpelesLab/cryptutil v0.2.29/go.mod h1:2gBM1JlpscOqYSE08hoOug3pFpR2Hh6EV/6aK7ZANqQ=
 github.com/KarpelesLab/emitter v0.1.0 h1:MQqtI4B4linBLuvPlXXb3wB4ujtCw5yDeFQwTwCsAHA=
 github.com/KarpelesLab/emitter v0.1.0/go.mod h1:JOaQADpNVN0OJfhkDurRCUkMEotPM8Pukh3DadTOY+4=
 github.com/KarpelesLab/emitter v0.2.0 h1:EVPud0etxlexaJPyufEP38Syywdhf0I7te9Y41xgYuY=
