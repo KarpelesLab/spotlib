@@ -117,4 +117,19 @@ func TestClient(t *testing.T) {
 		t.Fatalf("failed to send msg: %s", err)
 	}
 	log.Printf("got version = %s", v)
+
+	// let's try storing some random data
+	buf := []byte("Hello this is a test buffer")
+	err = c.StoreBlob(context.Background(), "test.txt", buf)
+	if err != nil {
+		t.Fatalf("failed to store file: %s", err)
+	}
+
+	// retrieve it
+	buf2, err := c.FetchBlob(context.Background(), "test.txt")
+	if err != nil {
+		t.Fatalf("failed to fetch file: %s", err)
+	} else if !bytes.Equal(buf, buf2) {
+		t.Fatalf("buf is not equal")
+	}
 }
