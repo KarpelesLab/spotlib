@@ -101,12 +101,14 @@ func New(params ...any) (*Client, error) {
 		}
 	}
 
+	ephemeral := false
 	if c.s == nil {
 		c.s, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 		if err != nil {
 			return nil, err
 		}
 		c.kc.AddKey(c.s)
+		ephemeral = true
 	}
 
 	// this shouldn't fail at this point since the keys added successfully to the keychain, but check anyway just in case
@@ -122,6 +124,10 @@ func New(params ...any) (*Client, error) {
 	}
 	c.id.Meta = meta
 	c.id.AddKeychain(c.kc)
+
+	if ephemeral {
+		c.id.AddKeyPurpose(c.s.Public(), "ephemeral")
+	}
 
 	// sign the ID
 	c.idBin, err = c.id.Sign(rand.Reader, c.kc.FirstSigner())
