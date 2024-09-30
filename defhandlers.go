@@ -19,4 +19,7 @@ func (c *Client) setDefaultHandlers() {
 		res := fmt.Sprintf("spotlib, %s", runtime.Version())
 		return []byte(res), nil
 	})
+	c.SetHandler("finger", func(msg *spotproto.Message) ([]byte, error) {
+		return c.idBin, nil
+	})
 }
