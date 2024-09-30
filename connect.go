@@ -126,7 +126,7 @@ func (co *conn) run() {
 
 func (co *conn) handle(c *websocket.Conn) error {
 	defer c.CloseNow()
-	c.SetReadLimit(256 * 1024) // 256kB max packet size
+	c.SetReadLimit(1024 * 1024) // 1MB max packet size
 
 	if err := co.handshake(c); err != nil {
 		return err
