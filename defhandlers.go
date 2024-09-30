@@ -1,9 +1,12 @@
 package spotlib
 
 import (
+	"context"
 	"fmt"
 	"runtime"
+	"time"
 
+	"github.com/KarpelesLab/emitter"
 	"github.com/KarpelesLab/spotproto"
 )
 
@@ -21,5 +24,11 @@ func (c *Client) setDefaultHandlers() {
 	})
 	c.SetHandler("finger", func(msg *spotproto.Message) ([]byte, error) {
 		return c.idBin, nil
+	})
+	c.SetHandler("check_update", func(msg *spotproto.Message) ([]byte, error) {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		emitter.Global.Emit(ctx, "check_update")
+		return nil, nil
 	})
 }
