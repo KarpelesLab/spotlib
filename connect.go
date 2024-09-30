@@ -268,6 +268,10 @@ func (co *conn) handlePacket(dat []byte) error {
 			return nil
 		}
 		rcv = rcv[pos+1:]
+		if pos2 := strings.IndexByte(rcv, '/'); pos2 != -1 {
+			rcv = rcv[:pos2]
+		}
+
 		q := co.c.takeInQ(rcv)
 		if q != nil {
 			q <- obj
