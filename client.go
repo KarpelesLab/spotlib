@@ -172,7 +172,6 @@ func (c *Client) Query(ctx context.Context, target string, body []byte) ([]byte,
 		return nil, errors.New("invalid target")
 	}
 
-	var msgFlags uint64
 	var rid *cryptutil.IDCard
 	var err error
 
@@ -188,7 +187,11 @@ func (c *Client) Query(ctx context.Context, target string, body []byte) ([]byte,
 			return nil, fmt.Errorf("failed to prepare query message: %w", err)
 		}
 	default:
-		msgFlags |= spotproto.MsgFlagNotBottle
+		// sign only
+		body, err = c.prepareMessage(rid, body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to prepare query message: %w", err)
+		}
 	}
 
 	id := uuid.New()
@@ -197,7 +200,6 @@ func (c *Client) Query(ctx context.Context, target string, body []byte) ([]byte,
 
 	msg := &spotproto.Message{
 		MessageID: id,
-		Flags:     msgFlags,
 		Sender:    "/" + id.String(),
 		Recipient: target,
 		Body:      body,
@@ -217,12 +219,15 @@ func (c *Client) Query(ctx context.Context, target string, body []byte) ([]byte,
 		// got a response
 		switch obj := v.(type) {
 		case *spotproto.Message:
-			if rid != nil {
-				// decrypt message
+			if obj.Flags&spotproto.MsgFlagNotBottle == 0 {
+				// decode/decrypt message
 				obj.Body, err = c.decodeMessage(rid, obj.Body)
 				if err != nil {
 					return nil, fmt.Errorf("failed to decode response: %w", err)
 				}
+			} else if rid != nil {
+				// if rid was not nil, the response must be an encrypted bottle
+				return nil, fmt.Errorf("remote failed to respond with an encrypted response")
 			}
 			if obj.Flags&spotproto.MsgFlagError != 0 {
 				return nil, errors.New(string(obj.Body))
@@ -380,12 +385,14 @@ func (c *Client) GetTime(ctx context.Context) (time.Time, error) {
 
 func (c *Client) prepareMessage(rid *cryptutil.IDCard, payload []byte) ([]byte, error) {
 	bottle := cryptutil.NewBottle(payload)
-	err := bottle.Encrypt(rand.Reader, rid)
-	if err != nil {
-		return nil, fmt.Errorf("failed to encrypt message: %w", err)
+	if rid != nil {
+		err := bottle.Encrypt(rand.Reader, rid)
+		if err != nil {
+			return nil, fmt.Errorf("failed to encrypt message: %w", err)
+		}
+		bottle.BottleUp()
 	}
-	bottle.BottleUp()
-	err = bottle.Sign(rand.Reader, c.s)
+	err := bottle.Sign(rand.Reader, c.s)
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign message: %w", err)
 	}
@@ -404,12 +411,14 @@ func (c *Client) decodeMessage(rid *cryptutil.IDCard, payload []byte) ([]byte, e
 	if err != nil {
 		return nil, fmt.Errorf("failed to open bottle: %w", err)
 	}
-	if info.Decryption == 0 {
-		return nil, errors.New("incoming message is not encrypted")
-	}
-	if !info.SignedBy(rid) {
-		c.needKeyRefresh()
-		return nil, errors.New("incoming message is not signed by sender")
+	if rid != nil {
+		if info.Decryption == 0 {
+			return nil, errors.New("incoming message is not encrypted")
+		}
+		if !info.SignedBy(rid) {
+			c.needKeyRefresh()
+			return nil, errors.New("incoming message is not signed by sender")
+		}
 	}
 	return buf, nil
 }
