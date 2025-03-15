@@ -1,3 +1,4 @@
+// Package spotlib provides a client implementation for the Spot secure messaging protocol
 package spotlib
 
 import (
@@ -26,33 +27,41 @@ import (
 	"github.com/google/uuid"
 )
 
-// Client holds information about a client, including its connections to the spot servers
+// Client holds information about a client, including its connections to the spot servers.
+// It manages cryptographic identity, connection state, message handlers, and provides
+// high-level methods for secure communication through the Spot protocol.
 type Client struct {
-	s           crypto.Signer // main signer for connection/etc
-	Events      *emitter.Hub
-	id          *cryptutil.IDCard
-	idBin       []byte // signed id
-	idLk        sync.Mutex
-	kc          *cryptutil.Keychain
-	mWrQ        chan *spotproto.Message // message write queue
-	conns       map[string]*conn
-	connsLk     sync.Mutex
-	minConn     uint32
-	connCnt     uint32
-	onlineCnt   uint32 // number of online connections
-	onlineCntLk sync.RWMutex
-	inQ         map[string]chan any
-	inQLk       sync.Mutex
-	msghdlr     map[string]MessageHandler
-	msghdlrLk   sync.RWMutex
-	idCache     map[string]*idCacheEntry
-	idCacheLk   sync.RWMutex
-	alive       chan struct{}
-	closed      uint32
+	s           crypto.Signer             // main signer for connection/authentication
+	Events      *emitter.Hub              // event hub for client events (online, offline, etc.)
+	id          *cryptutil.IDCard         // client identity card
+	idBin       []byte                    // binary representation of signed identity
+	idLk        sync.Mutex                // mutex for ID operations
+	kc          *cryptutil.Keychain       // keychain for crypto operations
+	mWrQ        chan *spotproto.Message   // message write queue for outgoing messages
+	conns       map[string]*conn          // active connections to spot servers
+	connsLk     sync.Mutex                // mutex for connections map access
+	minConn     uint32                    // minimum number of connections to maintain
+	connCnt     uint32                    // total connection count
+	onlineCnt   uint32                    // number of online connections (past handshake)
+	onlineCntLk sync.RWMutex              // mutex for online count operations
+	inQ         map[string]chan any       // inbound message queues by message ID
+	inQLk       sync.Mutex                // mutex for inQ map access
+	msghdlr     map[string]MessageHandler // registered message handlers by endpoint
+	msghdlrLk   sync.RWMutex              // mutex for message handler operations
+	idCache     map[string]*idCacheEntry  // cache of remote identity cards
+	idCacheLk   sync.RWMutex              // mutex for ID cache operations
+	alive       chan struct{}             // channel closed when client is shut down
+	closed      uint32                    // atomic flag indicating client is closed
 }
 
 // New starts a new Client and establishes connection to the Spot system. If any key is passed,
 // the first key will be used as the main signing key.
+//
+// Parameters can include:
+// - cryptutil.PrivateKey or *cryptutil.Keychain: keys to use for signing/encryption
+// - *emitter.Hub: event hub to use instead of creating a new one
+// - map[string]MessageHandler: initial message handlers to register
+// - map[string]string: metadata to include in the client ID card
 func New(params ...any) (*Client, error) {
 	c := &Client{
 		Events:  emitter.New(),
@@ -141,6 +150,8 @@ func New(params ...any) (*Client, error) {
 	return c, nil
 }
 
+// Close gracefully shuts down the client and all its connections.
+// This method is idempotent and safe to call multiple times.
 func (c *Client) Close() error {
 	if atomic.AddUint32(&c.closed, 1) == 1 {
 		close(c.alive)
@@ -149,12 +160,13 @@ func (c *Client) Close() error {
 	return nil
 }
 
-// IDCard returns our own IDCard
+// IDCard returns the client's own identity card containing its public key and metadata
 func (c *Client) IDCard() *cryptutil.IDCard {
 	return c.id
 }
 
-// TargetId returns the local client ID that can be used to transmit messages
+// TargetId returns the local client ID in the format 'k.<base64hash>'
+// that can be used to transmit messages to this client
 func (c *Client) TargetId() string {
 	return "k." + base64.RawURLEncoding.EncodeToString(cryptutil.Hash(c.id.Self, sha256.New))
 }
@@ -165,8 +177,11 @@ func (c *Client) ConnectionCount() (uint32, uint32) {
 	return atomic.LoadUint32(&c.connCnt), atomic.LoadUint32(&c.onlineCnt)
 }
 
-// Query sends a request & waits for the response. If the target is a key (starts with k:) the
+// Query sends a request & waits for the response. If the target is a key (starts with k.) the
 // message will be encrypted & signed so only the recipient can open it.
+//
+// This is a blocking call that returns the response body or an error. The context can be used
+// to set a timeout or cancel the operation.
 func (c *Client) Query(ctx context.Context, target string, body []byte) ([]byte, error) {
 	if len(target) == 0 {
 		return nil, errors.New("invalid target")
@@ -239,13 +254,14 @@ func (c *Client) Query(ctx context.Context, target string, body []byte) ([]byte,
 	}
 }
 
-// QueryTimeout calls Query with the specified timeout
+// QueryTimeout calls Query with the specified timeout duration as a convenience wrapper
 func (c *Client) QueryTimeout(timeout time.Duration, target string, body []byte) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	return c.Query(ctx, target, body)
 }
 
+// GetGroupMembers retrieves a list of member IDs for the specified group key
 func (c *Client) GetGroupMembers(ctx context.Context, groupKey []byte) ([]string, error) {
 	buf, err := c.Query(ctx, "@/group_list", groupKey)
 	if err != nil {
@@ -330,12 +346,14 @@ func (c *Client) FetchBlob(ctx context.Context, key string) ([]byte, error) {
 }
 
 // GetIDCardBin returns the binary ID card for the given hash
+// This also automatically subscribes the client to updates for this ID card
 func (c *Client) GetIDCardBin(ctx context.Context, h []byte) ([]byte, error) {
-	// TODO add local cache
-	return c.Query(ctx, "@/find", h)
+	return c.Query(ctx, "@/idcard_find", h)
 }
 
 // GetIDCard returns the ID card for the given hash
+// It first checks the local cache, and if not found, fetches it from the server.
+// Also automatically subscribes to updates for this ID card.
 func (c *Client) GetIDCard(ctx context.Context, h []byte) (*cryptutil.IDCard, error) {
 	if obj := c.getIDCardFromCache(h); obj != nil {
 		return obj, nil
@@ -349,7 +367,10 @@ func (c *Client) GetIDCard(ctx context.Context, h []byte) (*cryptutil.IDCard, er
 	if err != nil {
 		return nil, err
 	}
+
+	// Store in cache
 	c.setIDCardCache(h, idc)
+
 	return idc, nil
 }
 
@@ -383,6 +404,8 @@ func (c *Client) GetTime(ctx context.Context) (time.Time, error) {
 	return time.Unix(int64(u), int64(n)), nil
 }
 
+// prepareMessage prepares a message for sending by encrypting (if rid is not nil) and signing it
+// Returns the CBOR-encoded message bottle ready for transmission
 func (c *Client) prepareMessage(rid *cryptutil.IDCard, payload []byte) ([]byte, error) {
 	bottle := cryptutil.NewBottle(payload)
 	if rid != nil {
@@ -404,6 +427,8 @@ func (c *Client) prepareMessage(rid *cryptutil.IDCard, payload []byte) ([]byte, 
 	return body, nil
 }
 
+// decodeMessage decrypts and verifies a received message
+// If rid is provided, verifies the message was signed by the expected sender
 func (c *Client) decodeMessage(rid *cryptutil.IDCard, payload []byte) ([]byte, error) {
 	// need to decrypt this bottle
 	bottle := cryptutil.AsCborBottle(payload)
@@ -461,10 +486,12 @@ func (c *Client) SendToWithFrom(ctx context.Context, target string, payload []by
 	return nil
 }
 
+// logf logs debug messages with standard prefix and consistent formatting
 func (c *Client) logf(msg string, args ...any) {
 	slog.Debug("spot client: "+fmt.Sprintf(msg, args...), "event", "spot:client")
 }
 
+// mainThread runs as a goroutine and manages client lifecycle, including connection maintenance
 func (c *Client) mainThread() {
 	t := time.NewTicker(30 * time.Second)
 
@@ -491,6 +518,7 @@ func (c *Client) mainThread() {
 	}
 }
 
+// handleGroups updates the client's group membership and re-signs the ID card
 func (c *Client) handleGroups(groups [][]byte) error {
 	c.idLk.Lock()
 	defer c.idLk.Unlock()
@@ -510,6 +538,7 @@ func (c *Client) handleGroups(groups [][]byte) error {
 
 }
 
+// makeInQ creates a new inbound message queue for the given key (typically a message ID)
 func (c *Client) makeInQ(key string) chan any {
 	ch := make(chan any, 1)
 
@@ -520,6 +549,7 @@ func (c *Client) makeInQ(key string) chan any {
 	return ch
 }
 
+// takeInQ removes and returns the inbound message queue for the given key
 func (c *Client) takeInQ(key string) chan any {
 	c.inQLk.Lock()
 	defer c.inQLk.Unlock()
@@ -531,6 +561,7 @@ func (c *Client) takeInQ(key string) chan any {
 	return nil
 }
 
+// onlineIncr increments the online connection counter and triggers events if transitioning from offline to online
 func (c *Client) onlineIncr() {
 	c.onlineCntLk.Lock()
 	defer c.onlineCntLk.Unlock()
@@ -542,6 +573,7 @@ func (c *Client) onlineIncr() {
 	}
 }
 
+// onlineDecr decrements the online connection counter and triggers events if transitioning from online to offline
 func (c *Client) onlineDecr() {
 	c.onlineCntLk.Lock()
 	defer c.onlineCntLk.Unlock()
@@ -553,7 +585,8 @@ func (c *Client) onlineDecr() {
 	}
 }
 
-// WaitOnline waits for the client to come online
+// WaitOnline waits for the client to establish at least one online connection
+// Returns immediately if already online, otherwise blocks until online or context cancellation
 func (c *Client) WaitOnline(ctx context.Context) error {
 	l := c.Events.Trigger("online").Listen()
 	defer l.Release()

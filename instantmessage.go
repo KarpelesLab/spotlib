@@ -1,3 +1,4 @@
+// Package spotlib provides a client implementation for the Spot secure messaging protocol
 package spotlib
 
 import (
@@ -11,17 +12,19 @@ import (
 	"github.com/google/uuid"
 )
 
+// InstantMessage represents a message with metadata, content, and cryptographic information
 type InstantMessage struct {
-	ID        uuid.UUID
-	Flags     uint64
-	Recipient string
-	Sender    string
-	Body      []byte
-	Encrypted bool
-	SignedBy  [][]byte // contains the public keys that signed the message when decoding
+	ID        uuid.UUID // Unique message identifier
+	Flags     uint64    // Message flags for special handling
+	Recipient string    // Target recipient identifier
+	Sender    string    // Source sender identifier
+	Body      []byte    // Actual message content
+	Encrypted bool      // Whether the message was encrypted
+	SignedBy  [][]byte  // Contains the public keys that signed the message when decoding
 }
 
-// DecodeInstantMessage will return a InstantMessage for a given bottle, after checking the source and various details
+// DecodeInstantMessage extracts an InstantMessage from a cryptographic bottle
+// It verifies the contents and populates metadata fields based on the bottle headers
 func DecodeInstantMessage(buf []byte, res *cryptutil.OpenResult, err error) (*InstantMessage, error) {
 	if err != nil {
 		return nil, err
@@ -55,6 +58,7 @@ func DecodeInstantMessage(buf []byte, res *cryptutil.OpenResult, err error) (*In
 	return im, nil
 }
 
+// Bottle converts the InstantMessage into a cryptographic bottle for secure transmission
 func (im *InstantMessage) Bottle() *cryptutil.Bottle {
 	b := cryptutil.NewBottle(im.Body)
 	b.Header["mid"] = im.ID[:] // message id
@@ -70,15 +74,18 @@ func (im *InstantMessage) Bottle() *cryptutil.Bottle {
 	return b
 }
 
+// MarshalBinary implements the BinaryMarshaler interface for serialization
 func (im *InstantMessage) MarshalBinary() ([]byte, error) {
 	return im.Bytes(), nil
 }
 
+// UnmarshalBinary implements the BinaryUnmarshaler interface for deserialization
 func (im *InstantMessage) UnmarshalBinary(r []byte) error {
 	_, err := im.ReadFrom(bytes.NewReader(r))
 	return err
 }
 
+// ReadFrom implements the ReaderFrom interface for streaming deserialization
 func (im *InstantMessage) ReadFrom(r io.Reader) (int64, error) {
 	rb := bufio.NewReader(r)
 
@@ -93,6 +100,7 @@ func (im *InstantMessage) ReadFrom(r io.Reader) (int64, error) {
 	return int64(n), nil
 }
 
+// Bytes serializes the InstantMessage into a byte array for transmission
 func (im *InstantMessage) Bytes() []byte {
 	buf := &bytes.Buffer{}
 	buf.Write(im.ID[:])

@@ -1,3 +1,4 @@
+// Package spotlib provides a client implementation for the Spot secure messaging protocol
 package spotlib
 
 import (
@@ -7,6 +8,8 @@ import (
 	"time"
 )
 
+// writeVarString writes a length-prefixed byte slice to a writer
+// The length is encoded as a variable-length unsigned integer
 func writeVarString(w io.Writer, s []byte) error {
 	_, err := w.Write(binary.AppendUvarint(nil, uint64(len(s))))
 	if err != nil {
@@ -16,6 +19,8 @@ func writeVarString(w io.Writer, s []byte) error {
 	return err
 }
 
+// appendVarString appends a length-prefixed byte slice to an existing buffer
+// Returns the extended buffer
 func appendVarString(buf []byte, s []byte) []byte {
 	buf = binary.AppendUvarint(buf, uint64(len(s)))
 	return append(buf, s...)

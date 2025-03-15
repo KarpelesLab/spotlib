@@ -1,3 +1,4 @@
+// Package spotlib provides a client implementation for the Spot secure messaging protocol
 package spotlib
 
 import (
@@ -13,12 +14,14 @@ import (
 	"github.com/coder/websocket"
 )
 
+// conn represents a single connection to a Spot server
 type conn struct {
-	host string
-	wr   chan []byte
-	c    *Client
+	host string      // hostname of the spot server
+	wr   chan []byte // write channel for sending raw binary packets
+	c    *Client     // reference to the parent client
 }
 
+// getConn retrieves an existing connection to the specified host or returns nil if none exists
 func (c *Client) getConn(host string) *conn {
 	c.connsLk.Lock()
 	defer c.connsLk.Unlock()
@@ -29,6 +32,7 @@ func (c *Client) getConn(host string) *conn {
 	return nil
 }
 
+// regConn registers a new connection in the client's connection map
 func (c *Client) regConn(co *conn) {
 	c.connsLk.Lock()
 	defer c.connsLk.Unlock()
@@ -36,6 +40,8 @@ func (c *Client) regConn(co *conn) {
 	c.conns[co.host] = co
 }
 
+// unregConn removes a connection from the client's connection map
+// Returns true if the connection was found and removed, false otherwise
 func (c *Client) unregConn(co *conn) bool {
 	c.connsLk.Lock()
 	defer c.connsLk.Unlock()
@@ -47,6 +53,8 @@ func (c *Client) unregConn(co *conn) bool {
 	return false
 }
 
+// getHosts retrieves a list of available Spot servers from the API
+// Returns a list of host addresses and the minimum recommended connection count
 func getHosts(ctx context.Context) ([]string, uint32, error) {
 	// call Spot:connect API to fetch hosts we can connect to
 	var res *struct {
@@ -60,6 +68,8 @@ func getHosts(ctx context.Context) ([]string, uint32, error) {
 	return res.Hosts, res.MinConn, nil
 }
 
+// runConnect establishes connections to Spot servers
+// Fetches available hosts and creates connections as needed to meet minimum requirements
 func (c *Client) runConnect() error {
 	hosts, minConn, err := getHosts(context.Background())
 	if err != nil {
@@ -91,6 +101,8 @@ func (c *Client) runConnect() error {
 	return nil
 }
 
+// run manages the connection lifecycle, handling reconnection and cleanup
+// This function runs in its own goroutine for each connection
 func (co *conn) run() {
 	defer co.c.unregConn(co)
 
@@ -124,6 +136,8 @@ func (co *conn) run() {
 	}
 }
 
+// handle manages an established websocket connection
+// Performs handshake and then handles message routing in a continuous loop
 func (co *conn) handle(c *websocket.Conn) error {
 	defer c.CloseNow()
 	c.SetReadLimit(1024 * 1024) // 1MB max packet size
@@ -158,6 +172,8 @@ func (co *conn) handle(c *websocket.Conn) error {
 	}
 }
 
+// handleWrites runs in a separate goroutine to handle outgoing messages
+// Monitors channels for messages to send and forwards them to the websocket
 func (co *conn) handleWrites(ctx context.Context, cancel func(), wsc *websocket.Conn) {
 	defer cancel()
 
@@ -178,6 +194,8 @@ func (co *conn) handleWrites(ctx context.Context, cancel func(), wsc *websocket.
 	}
 }
 
+// handshake performs the authentication handshake with the Spot server
+// Processes challenges, handles group membership, and sends client identity information
 func (co *conn) handshake(c *websocket.Conn) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
@@ -223,6 +241,7 @@ func (co *conn) handshake(c *websocket.Conn) error {
 	}
 }
 
+// dial establishes a websocket connection to the Spot server
 func (co *conn) dial() (*websocket.Conn, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -235,6 +254,8 @@ func (co *conn) dial() (*websocket.Conn, error) {
 	return c, err
 }
 
+// handlePacket processes an incoming binary packet from the server
+// Parses the packet and routes it appropriately based on type and content
 func (co *conn) handlePacket(dat []byte) error {
 	pkt, err := spotproto.Parse(dat, true)
 	if err != nil {

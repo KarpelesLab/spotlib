@@ -1,3 +1,4 @@
+// Package spotlib provides a client implementation for the Spot secure messaging protocol
 package spotlib
 
 import (
@@ -8,8 +9,12 @@ import (
 	"github.com/KarpelesLab/spotproto"
 )
 
+// MessageHandler is a function type that processes incoming messages and optionally returns a response
+// If an error is returned, it will be converted to an error message and sent back to the sender
 type MessageHandler func(msg *spotproto.Message) ([]byte, error)
 
+// SetHandler registers a handler function for a specific endpoint
+// If handler is nil, removes any existing handler for the endpoint
 func (c *Client) SetHandler(endpoint string, handler MessageHandler) {
 	c.msghdlrLk.Lock()
 	defer c.msghdlrLk.Unlock()
@@ -21,6 +26,7 @@ func (c *Client) SetHandler(endpoint string, handler MessageHandler) {
 	}
 }
 
+// getHandler retrieves the registered handler for an endpoint or returns nil if none exists
 func (c *Client) getHandler(endpoint string) MessageHandler {
 	c.msghdlrLk.RLock()
 	defer c.msghdlrLk.RUnlock()
@@ -31,6 +37,10 @@ func (c *Client) getHandler(endpoint string) MessageHandler {
 	return nil
 }
 
+// runHandler processes an incoming message by:
+// 1. Decrypting the message if needed
+// 2. Executing the handler function
+// 3. Preparing and sending a response if appropriate
 func (c *Client) runHandler(msg *spotproto.Message, h MessageHandler) {
 	var rid *cryptutil.IDCard
 	var err error
@@ -89,6 +99,8 @@ func (c *Client) runHandler(msg *spotproto.Message, h MessageHandler) {
 	c.mWrQ <- respMsg
 }
 
+// safeRunHandler executes a message handler with panic recovery to prevent crashes
+// Any panic is converted to an error that can be properly reported to the sender
 func (c *Client) safeRunHandler(msg *spotproto.Message, h MessageHandler) (buf []byte, err error) {
 	defer func() {
 		if e := recover(); e != nil {

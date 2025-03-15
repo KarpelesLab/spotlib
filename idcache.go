@@ -1,3 +1,4 @@
+// Package spotlib provides a client implementation for the Spot secure messaging protocol
 package spotlib
 
 import (
@@ -6,11 +7,14 @@ import (
 	"github.com/KarpelesLab/cryptutil"
 )
 
+// idCacheEntry represents a cached ID card with a timestamp for expiration handling
 type idCacheEntry struct {
-	id *cryptutil.IDCard
-	t  time.Time
+	id *cryptutil.IDCard // The cached identity card
+	t  time.Time         // Time when the entry was cached
 }
 
+// getIDCardFromCache retrieves an ID card from the cache if it exists
+// Returns nil if the hash is not found in the cache
 func (c *Client) getIDCardFromCache(h []byte) *cryptutil.IDCard {
 	c.idCacheLk.RLock()
 	defer c.idCacheLk.RUnlock()
@@ -24,7 +28,10 @@ func (c *Client) getIDCardFromCache(h []byte) *cryptutil.IDCard {
 	return v.id
 }
 
-func (c *Client) setIDCardCache(h []byte, obj *cryptutil.IDCard) {
+// setIDCardCache adds or updates an ID card in the cache
+// Includes protection against cache overfill by clearing the cache if it grows too large
+// Returns true if this was a cache update (not a new entry)
+func (c *Client) setIDCardCache(h []byte, obj *cryptutil.IDCard) bool {
 	c.idCacheLk.Lock()
 	defer c.idCacheLk.Unlock()
 
@@ -33,14 +40,24 @@ func (c *Client) setIDCardCache(h []byte, obj *cryptutil.IDCard) {
 		clear(c.idCache)
 	}
 
+	// Check if this is an update to an existing entry
+	isUpdate := false
+	key := string(h)
+	if _, exists := c.idCache[key]; exists {
+		isUpdate = true
+	}
+
 	e := &idCacheEntry{
 		id: obj,
 		t:  time.Now(),
 	}
 
-	c.idCache[string(h)] = e
+	c.idCache[key] = e
+	return isUpdate
 }
 
+// needKeyRefresh clears the ID cache when signature verification fails
+// This triggers fetching fresh ID cards when needed
 func (c *Client) needKeyRefresh() {
 	c.idCacheLk.Lock()
 	defer c.idCacheLk.Unlock()
