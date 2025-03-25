@@ -3,6 +3,8 @@ package spotlib
 import (
 	"context"
 	"fmt"
+	"log"
+	"runtime/debug"
 
 	"github.com/KarpelesLab/cryptutil"
 	"github.com/KarpelesLab/spotproto"
@@ -103,6 +105,7 @@ func (c *Client) runHandler(msg *spotproto.Message, h MessageHandler) {
 func (c *Client) safeRunHandler(msg *spotproto.Message, h MessageHandler) (buf []byte, err error) {
 	defer func() {
 		if e := recover(); e != nil {
+			log.Printf("spotlib: caught panic in handler: %s\nStack:\n%s", err, debug.Stack())
 			switch v := e.(type) {
 			case error:
 				err = fmt.Errorf("panic in handler: %w", v)
