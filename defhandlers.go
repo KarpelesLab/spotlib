@@ -3,6 +3,7 @@ package spotlib
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/base64"
 	"fmt"
 	"runtime"
 	"time"
@@ -58,7 +59,7 @@ func (c *Client) setDefaultHandlers() {
 		// Update the ID card in the cache and check if it was an update or new entry
 		c.setIDCardCache(idHash, idc)
 
-		c.logf("updated ID card in cache: %x", idHash[:8])
+		c.logf("updated ID card in cache: k.%s", base64.RawURLEncoding.EncodeToString(idHash))
 
 		// No response needed for this notification
 		return nil, nil
