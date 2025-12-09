@@ -2,8 +2,11 @@ package spotlib
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"io"
+	"net"
+	"net/http"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -249,7 +252,38 @@ func (co *conn) dial() (*websocket.Conn, error) {
 
 	co.c.logf("dialing via websocket: %s", u)
 
-	c, _, err := websocket.Dial(ctx, u, nil)
+	// Create a custom HTTP client with our g-dns.net resolver to avoid
+	// DNS lookup issues with misconfigured DNS servers
+	resolver := newGdnsResolver()
+	transport := &http.Transport{
+		DialContext: resolver.Dial,
+		TLSClientConfig: &tls.Config{
+			ServerName: co.host,
+		},
+		DialTLSContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			// First establish a plain TCP connection using our resolver
+			conn, err := resolver.Dial(ctx, network, addr)
+			if err != nil {
+				return nil, err
+			}
+			// Then wrap it with TLS
+			tlsConn := tls.Client(conn, &tls.Config{
+				ServerName: co.host,
+			})
+			if err := tlsConn.HandshakeContext(ctx); err != nil {
+				conn.Close()
+				return nil, err
+			}
+			return tlsConn, nil
+		},
+	}
+	httpClient := &http.Client{Transport: transport}
+
+	opts := &websocket.DialOptions{
+		HTTPClient: httpClient,
+	}
+
+	c, _, err := websocket.Dial(ctx, u, opts)
 	return c, err
 }
 
