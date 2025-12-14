@@ -55,7 +55,32 @@ func main() {
 
 ### Using a Persistent Identity
 
-To maintain the same identity across restarts, provide your own private key:
+The easiest way to maintain the same identity across restarts is to use `NewDiskStore`:
+
+```go
+// Create a disk store that persists keys to ~/.config/spot/ (or equivalent)
+store, err := spotlib.NewDiskStore()
+if err != nil {
+    log.Fatal(err)
+}
+
+// Create client with the stored keychain
+client, err := spotlib.New(store.Keychain())
+```
+
+The disk store automatically:
+- Creates the storage directory if it doesn't exist
+- Generates a new ECDSA P-256 key if no keys exist
+- Loads existing keys on subsequent runs
+- Stores keys in PEM-encoded PKCS#8 format as `id_<type>.key` files
+
+You can also specify a custom path:
+
+```go
+store, err := spotlib.NewDiskStoreWithPath("/path/to/keys")
+```
+
+Alternatively, manage keys manually:
 
 ```go
 import (
@@ -252,6 +277,17 @@ The client registers these handlers automatically:
 | `FetchBlob(ctx, key)` | Retrieve encrypted data |
 | `GetTime(ctx)` | Get server time |
 | `GetGroupMembers(ctx, key)` | List group members |
+
+### Storage
+
+| Type/Function | Description |
+|---------------|-------------|
+| `ClientData` | Interface for providing client identity (requires `Keychain()` method) |
+| `NewDiskStore()` | Create disk store at default path (`~/.config/spot/`) |
+| `NewDiskStoreWithPath(path)` | Create disk store at custom path |
+| `(*diskStore).Keychain()` | Get keychain with loaded keys |
+| `(*diskStore).Path()` | Get storage directory path |
+| `(*diskStore).AddKey(key, type)` | Add and persist a new key |
 
 ## License
 
