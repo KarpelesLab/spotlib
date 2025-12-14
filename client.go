@@ -390,6 +390,8 @@ func (c *Client) GetIDCardForRecipient(ctx context.Context, rcv string) (*cryptu
 	return c.GetIDCard(ctx, h)
 }
 
+// GetTime queries the Spot server for its current time.
+// This can be used for clock synchronization or to verify server connectivity.
 func (c *Client) GetTime(ctx context.Context) (time.Time, error) {
 	res, err := c.Query(ctx, "@/time", nil)
 	if err != nil {
@@ -501,17 +503,14 @@ func (c *Client) mainThread() {
 		c.logf("failed to perform initial connection: %s", err)
 	}
 
-	for {
-		select {
-		case <-t.C:
-			// perform checks like number of connections, etc
-			cnt := atomic.LoadUint32(&c.connCnt)
-			if cnt < c.minConn {
-				// require at least 2 active connections
-				err := c.runConnect()
-				if err != nil {
-					c.logf("failed to perform initial connection: %s", err)
-				}
+	for range t.C {
+		// perform checks like number of connections, etc
+		cnt := atomic.LoadUint32(&c.connCnt)
+		if cnt < c.minConn {
+			// require at least 2 active connections
+			err := c.runConnect()
+			if err != nil {
+				c.logf("failed to perform initial connection: %s", err)
 			}
 		}
 	}

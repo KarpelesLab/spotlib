@@ -18,13 +18,6 @@ func writeVarString(w io.Writer, s []byte) error {
 	return err
 }
 
-// appendVarString appends a length-prefixed byte slice to an existing buffer
-// Returns the extended buffer
-func appendVarString(buf []byte, s []byte) []byte {
-	buf = binary.AppendUvarint(buf, uint64(len(s)))
-	return append(buf, s...)
-}
-
 // WithTimeout makes it easy to call a method that requires a context with a specified timeout
 // without having to worry about calling the cancel() method. Go typically suggests using defer,
 // however if processing after a given method is called continues, there is a risk the cancel

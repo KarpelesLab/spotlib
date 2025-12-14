@@ -6,7 +6,7 @@ require (
 	github.com/KarpelesLab/cryptutil v0.2.30
 	github.com/KarpelesLab/emitter v0.2.1
 	github.com/KarpelesLab/rest v0.5.21
-	github.com/KarpelesLab/spotproto v0.2.0
+	github.com/KarpelesLab/spotproto v0.2.1
 	github.com/coder/websocket v1.8.12
 	github.com/fxamacker/cbor/v2 v2.7.0
 	github.com/google/uuid v1.6.0

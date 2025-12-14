@@ -183,7 +183,7 @@ func (co *conn) handleWrites(ctx context.Context, cancel func(), wsc *websocket.
 		select {
 		case <-ctx.Done():
 			return
-		case _, _ = <-co.c.alive:
+		case <-co.c.alive:
 			return
 		case msg := <-co.c.mWrQ:
 			// write message

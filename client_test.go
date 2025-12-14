@@ -46,7 +46,7 @@ func TestClient(t *testing.T) {
 	log.Printf("server version = %s", res)
 
 	var tim time.Time
-	spotlib.WithTimeout(nil, 30*time.Second, func(ctx context.Context) {
+	spotlib.WithTimeout(context.Background(), 30*time.Second, func(ctx context.Context) {
 		tim, err = c.GetTime(ctx)
 	})
 	if err != nil {
