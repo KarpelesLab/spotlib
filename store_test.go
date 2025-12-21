@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/KarpelesLab/cryptutil"
+	"github.com/BottleFmt/gobottle"
 	"github.com/KarpelesLab/spotlib"
 )
 
@@ -106,7 +106,7 @@ func TestDiskStoreAddKey(t *testing.T) {
 
 	// Verify both keys are in the keychain
 	keyCount := 0
-	store.Keychain().All(func(k cryptutil.PrivateKey) bool {
+	store.Keychain().All(func(k gobottle.PrivateKey) bool {
 		keyCount++
 		return true
 	})

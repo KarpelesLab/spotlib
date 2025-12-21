@@ -7,7 +7,7 @@ import (
 	"errors"
 	"io"
 
-	"github.com/KarpelesLab/cryptutil"
+	"github.com/BottleFmt/gobottle"
 	"github.com/google/uuid"
 )
 
@@ -24,7 +24,7 @@ type InstantMessage struct {
 
 // DecodeInstantMessage extracts an InstantMessage from a cryptographic bottle
 // It verifies the contents and populates metadata fields based on the bottle headers
-func DecodeInstantMessage(buf []byte, res *cryptutil.OpenResult, err error) (*InstantMessage, error) {
+func DecodeInstantMessage(buf []byte, res *gobottle.OpenResult, err error) (*InstantMessage, error) {
 	if err != nil {
 		return nil, err
 	}
@@ -58,8 +58,8 @@ func DecodeInstantMessage(buf []byte, res *cryptutil.OpenResult, err error) (*In
 }
 
 // Bottle converts the InstantMessage into a cryptographic bottle for secure transmission
-func (im *InstantMessage) Bottle() *cryptutil.Bottle {
-	b := cryptutil.NewBottle(im.Body)
+func (im *InstantMessage) Bottle() *gobottle.Bottle {
+	b := gobottle.NewBottle(im.Body)
 	b.Header["mid"] = im.ID[:] // message id
 	if im.Flags != 0 {
 		b.Header["flg"] = im.Flags

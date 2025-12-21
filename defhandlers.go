@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/KarpelesLab/cryptutil"
+	"github.com/BottleFmt/gobottle"
 	"github.com/KarpelesLab/emitter"
 	"github.com/KarpelesLab/spotproto"
 )
@@ -46,7 +46,7 @@ func (c *Client) setDefaultHandlers() {
 		}
 
 		// Parse the ID card from binary data
-		idc := &cryptutil.IDCard{}
+		idc := &gobottle.IDCard{}
 		err := idc.UnmarshalBinary(msg.Body)
 		if err != nil {
 			c.logf("failed to parse ID card update: %s", err)
@@ -54,7 +54,7 @@ func (c *Client) setDefaultHandlers() {
 		}
 
 		// Get hash of the ID card
-		idHash := cryptutil.Hash(idc.Self, sha256.New)
+		idHash := gobottle.Hash(idc.Self, sha256.New)
 
 		// Update the ID card in the cache and check if it was an update or new entry
 		c.setIDCardCache(idHash, idc)

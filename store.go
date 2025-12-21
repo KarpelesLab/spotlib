@@ -12,21 +12,21 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/KarpelesLab/cryptutil"
+	"github.com/BottleFmt/gobottle"
 )
 
 // ClientData is an interface for providing client identity data including cryptographic keys.
 // Implementations should return a keychain containing at least one private key for signing.
 type ClientData interface {
 	// Keychain returns a keychain with at least one private key for client identity
-	Keychain() *cryptutil.Keychain
+	Keychain() *gobottle.Keychain
 }
 
 // diskStore implements ClientData and persists keys to disk in the user's config directory.
 // Keys are stored in PEM-encoded PKCS#8 format as id_<key_type>.key files.
 type diskStore struct {
 	path string
-	kc   *cryptutil.Keychain
+	kc   *gobottle.Keychain
 }
 
 // NewDiskStore creates a new disk-based store for client data.
@@ -55,7 +55,7 @@ func NewDiskStoreWithPath(path string) (*diskStore, error) {
 
 	ds := &diskStore{
 		path: path,
-		kc:   cryptutil.NewKeychain(),
+		kc:   gobottle.NewKeychain(),
 	}
 
 	// Load existing keys
@@ -65,7 +65,7 @@ func NewDiskStoreWithPath(path string) (*diskStore, error) {
 
 	// If no keys exist, generate a new one
 	hasKeys := false
-	ds.kc.All(func(k cryptutil.PrivateKey) bool {
+	ds.kc.All(func(k gobottle.PrivateKey) bool {
 		hasKeys = true
 		return false
 	})
@@ -80,7 +80,7 @@ func NewDiskStoreWithPath(path string) (*diskStore, error) {
 }
 
 // Keychain returns the keychain containing the client's private keys.
-func (ds *diskStore) Keychain() *cryptutil.Keychain {
+func (ds *diskStore) Keychain() *gobottle.Keychain {
 	return ds.kc
 }
 

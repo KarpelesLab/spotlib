@@ -6,7 +6,7 @@ import (
 	"log"
 	"runtime/debug"
 
-	"github.com/KarpelesLab/cryptutil"
+	"github.com/BottleFmt/gobottle"
 	"github.com/KarpelesLab/spotproto"
 )
 
@@ -43,7 +43,7 @@ func (c *Client) getHandler(endpoint string) MessageHandler {
 // 2. Executing the handler function
 // 3. Preparing and sending a response if appropriate
 func (c *Client) runHandler(msg *spotproto.Message, h MessageHandler) {
-	var rid *cryptutil.IDCard
+	var rid *gobottle.IDCard
 	var err error
 
 	if msg.Flags&spotproto.MsgFlagNotBottle == 0 {

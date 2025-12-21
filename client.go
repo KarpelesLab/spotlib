@@ -19,7 +19,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/KarpelesLab/cryptutil"
+	"github.com/BottleFmt/gobottle"
 	"github.com/KarpelesLab/emitter"
 	"github.com/KarpelesLab/spotproto"
 	"github.com/fxamacker/cbor/v2"
@@ -32,10 +32,10 @@ import (
 type Client struct {
 	s           crypto.Signer             // main signer for connection/authentication
 	Events      *emitter.Hub              // event hub for client events (online, offline, etc.)
-	id          *cryptutil.IDCard         // client identity card
+	id          *gobottle.IDCard          // client identity card
 	idBin       []byte                    // binary representation of signed identity
 	idLk        sync.Mutex                // mutex for ID operations
-	kc          *cryptutil.Keychain       // keychain for crypto operations
+	kc          *gobottle.Keychain        // keychain for crypto operations
 	mWrQ        chan *spotproto.Message   // message write queue for outgoing messages
 	conns       map[string]*conn          // active connections to spot servers
 	connsLk     sync.Mutex                // mutex for connections map access
@@ -57,14 +57,14 @@ type Client struct {
 // the first key will be used as the main signing key.
 //
 // Parameters can include:
-// - cryptutil.PrivateKey or *cryptutil.Keychain: keys to use for signing/encryption
+// - gobottle.PrivateKey or *gobottle.Keychain: keys to use for signing/encryption
 // - *emitter.Hub: event hub to use instead of creating a new one
 // - map[string]MessageHandler: initial message handlers to register
 // - map[string]string: metadata to include in the client ID card
 func New(params ...any) (*Client, error) {
 	c := &Client{
 		Events:  emitter.New(),
-		kc:      cryptutil.NewKeychain(),
+		kc:      gobottle.NewKeychain(),
 		minConn: 1,
 		conns:   make(map[string]*conn),
 		mWrQ:    make(chan *spotproto.Message, 4),
@@ -81,9 +81,9 @@ func New(params ...any) (*Client, error) {
 
 	for _, p := range params {
 		switch v := p.(type) {
-		case *cryptutil.Keychain:
+		case *gobottle.Keychain:
 			c.kc.AddKey(v)
-		case cryptutil.PrivateKey:
+		case gobottle.PrivateKey:
 			c.kc.AddKey(v)
 		case *emitter.Hub:
 			c.Events = v
@@ -120,13 +120,13 @@ func New(params ...any) (*Client, error) {
 	}
 
 	// this shouldn't fail at this point since the keys added successfully to the keychain, but check anyway just in case
-	pub := cryptutil.PublicKey(c.kc.FirstSigner())
+	pub := gobottle.PublicKey(c.kc.FirstSigner())
 	if pub == nil {
 		return nil, fmt.Errorf("bad key type %T", c.kc.FirstSigner())
 	}
 
 	// generate a client ID
-	c.id, err = cryptutil.NewIDCard(pub)
+	c.id, err = gobottle.NewIDCard(pub)
 	if err != nil {
 		return nil, err
 	}
@@ -160,14 +160,14 @@ func (c *Client) Close() error {
 }
 
 // IDCard returns the client's own identity card containing its public key and metadata
-func (c *Client) IDCard() *cryptutil.IDCard {
+func (c *Client) IDCard() *gobottle.IDCard {
 	return c.id
 }
 
 // TargetId returns the local client ID in the format 'k.<base64hash>'
 // that can be used to transmit messages to this client
 func (c *Client) TargetId() string {
-	return "k." + base64.RawURLEncoding.EncodeToString(cryptutil.Hash(c.id.Self, sha256.New))
+	return "k." + base64.RawURLEncoding.EncodeToString(gobottle.Hash(c.id.Self, sha256.New))
 }
 
 // ConnectionCount returns the number of spot server connections, and the number of
@@ -186,7 +186,7 @@ func (c *Client) Query(ctx context.Context, target string, body []byte) ([]byte,
 		return nil, errors.New("invalid target")
 	}
 
-	var rid *cryptutil.IDCard
+	var rid *gobottle.IDCard
 	var err error
 
 	switch target[0] {
@@ -288,7 +288,7 @@ func (c *Client) StoreBlob(ctx context.Context, key string, value []byte) error 
 		_, err := c.Query(ctx, "@/store_blob", []byte(key+"\x00"))
 		return err
 	}
-	b := cryptutil.NewBottle(value)
+	b := gobottle.NewBottle(value)
 	err := b.Encrypt(rand.Reader, c.id)
 	if err != nil {
 		return err
@@ -326,7 +326,7 @@ func (c *Client) FetchBlob(ctx context.Context, key string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	op, err := cryptutil.NewOpener(c.kc)
+	op, err := gobottle.NewOpener(c.kc)
 	if err != nil {
 		return nil, err
 	}
@@ -353,7 +353,7 @@ func (c *Client) GetIDCardBin(ctx context.Context, h []byte) ([]byte, error) {
 // GetIDCard returns the ID card for the given hash
 // It first checks the local cache, and if not found, fetches it from the server.
 // Also automatically subscribes to updates for this ID card.
-func (c *Client) GetIDCard(ctx context.Context, h []byte) (*cryptutil.IDCard, error) {
+func (c *Client) GetIDCard(ctx context.Context, h []byte) (*gobottle.IDCard, error) {
 	if obj := c.getIDCardFromCache(h); obj != nil {
 		return obj, nil
 	}
@@ -361,7 +361,7 @@ func (c *Client) GetIDCard(ctx context.Context, h []byte) (*cryptutil.IDCard, er
 	if err != nil {
 		return nil, err
 	}
-	idc := &cryptutil.IDCard{}
+	idc := &gobottle.IDCard{}
 	err = idc.UnmarshalBinary(buf)
 	if err != nil {
 		return nil, err
@@ -374,7 +374,7 @@ func (c *Client) GetIDCard(ctx context.Context, h []byte) (*cryptutil.IDCard, er
 }
 
 // GetIDCardForRecipient returns the ID Card of a given recipient, if any
-func (c *Client) GetIDCardForRecipient(ctx context.Context, rcv string) (*cryptutil.IDCard, error) {
+func (c *Client) GetIDCardForRecipient(ctx context.Context, rcv string) (*gobottle.IDCard, error) {
 	// rcv has the format: k.<base64url hash>/<endpoint>
 	if pos := strings.IndexByte(rcv, '/'); pos > 0 {
 		rcv = rcv[:pos]
@@ -407,8 +407,8 @@ func (c *Client) GetTime(ctx context.Context) (time.Time, error) {
 
 // prepareMessage prepares a message for sending by encrypting (if rid is not nil) and signing it
 // Returns the CBOR-encoded message bottle ready for transmission
-func (c *Client) prepareMessage(rid *cryptutil.IDCard, payload []byte) ([]byte, error) {
-	bottle := cryptutil.NewBottle(payload)
+func (c *Client) prepareMessage(rid *gobottle.IDCard, payload []byte) ([]byte, error) {
+	bottle := gobottle.NewBottle(payload)
 	if rid != nil {
 		err := bottle.Encrypt(rand.Reader, rid)
 		if err != nil {
@@ -430,10 +430,10 @@ func (c *Client) prepareMessage(rid *cryptutil.IDCard, payload []byte) ([]byte, 
 
 // decodeMessage decrypts and verifies a received message
 // If rid is provided, verifies the message was signed by the expected sender
-func (c *Client) decodeMessage(rid *cryptutil.IDCard, payload []byte) ([]byte, error) {
+func (c *Client) decodeMessage(rid *gobottle.IDCard, payload []byte) ([]byte, error) {
 	// need to decrypt this bottle
-	bottle := cryptutil.AsCborBottle(payload)
-	buf, info, err := cryptutil.MustOpener(c.kc).Open(bottle)
+	bottle := gobottle.AsCborBottle(payload)
+	buf, info, err := gobottle.MustOpener(c.kc).Open(bottle)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open bottle: %w", err)
 	}

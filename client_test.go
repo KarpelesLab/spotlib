@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/KarpelesLab/cryptutil"
+	"github.com/BottleFmt/gobottle"
 	"github.com/KarpelesLab/spotlib"
 	"github.com/KarpelesLab/spotproto"
 )
@@ -55,7 +55,7 @@ func TestClient(t *testing.T) {
 	log.Printf("server time: %s", tim)
 
 	// attempt to get our own IDcard
-	idc, err := c.GetIDCard(context.Background(), cryptutil.Hash(c.IDCard().Self, sha256.New))
+	idc, err := c.GetIDCard(context.Background(), gobottle.Hash(c.IDCard().Self, sha256.New))
 	if err != nil {
 		t.Fatalf("failed to fetch own id: %s", err)
 		return
@@ -63,7 +63,7 @@ func TestClient(t *testing.T) {
 	if !bytes.Equal(idc.Self, c.IDCard().Self) {
 		t.Fatalf("invalid self value for idcard, %x != %x", idc.Self, c.IDCard().Self)
 	}
-	log.Printf("got self id = %x", cryptutil.Hash(idc.Self, sha256.New))
+	log.Printf("got self id = %x", gobottle.Hash(idc.Self, sha256.New))
 
 	hQ := make(chan []byte, 2)
 

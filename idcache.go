@@ -3,18 +3,18 @@ package spotlib
 import (
 	"time"
 
-	"github.com/KarpelesLab/cryptutil"
+	"github.com/BottleFmt/gobottle"
 )
 
 // idCacheEntry represents a cached ID card with a timestamp for expiration handling
 type idCacheEntry struct {
-	id *cryptutil.IDCard // The cached identity card
-	t  time.Time         // Time when the entry was cached
+	id *gobottle.IDCard // The cached identity card
+	t  time.Time        // Time when the entry was cached
 }
 
 // getIDCardFromCache retrieves an ID card from the cache if it exists
 // Returns nil if the hash is not found in the cache
-func (c *Client) getIDCardFromCache(h []byte) *cryptutil.IDCard {
+func (c *Client) getIDCardFromCache(h []byte) *gobottle.IDCard {
 	c.idCacheLk.RLock()
 	defer c.idCacheLk.RUnlock()
 
@@ -30,7 +30,7 @@ func (c *Client) getIDCardFromCache(h []byte) *cryptutil.IDCard {
 // setIDCardCache adds or updates an ID card in the cache
 // Includes protection against cache overfill by clearing the cache if it grows too large
 // Returns true if this was a cache update (not a new entry)
-func (c *Client) setIDCardCache(h []byte, obj *cryptutil.IDCard) bool {
+func (c *Client) setIDCardCache(h []byte, obj *gobottle.IDCard) bool {
 	c.idCacheLk.Lock()
 	defer c.idCacheLk.Unlock()
 
